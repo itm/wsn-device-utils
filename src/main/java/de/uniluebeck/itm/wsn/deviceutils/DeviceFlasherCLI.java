@@ -1,5 +1,6 @@
 package de.uniluebeck.itm.wsn.deviceutils;
 
+import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 
 public class DeviceFlasherCLI {
 
@@ -69,15 +71,13 @@ public class DeviceFlasherCLI {
 			public void onSuccess(Void result) {
 				log.info("Progress: {}%", 100);
 				log.info("Flashing node done!");
-				connection.shutdown(true);
-				operationQueue.shutdown(true);
+				closeConnection(operationQueue, connection);
 			}
 
 			@Override
 			public void onFailure(Throwable throwable) {
-				log.error("Flashing node failed with Exception: " + throwable, (Exception) throwable);
-				connection.shutdown(true);
-				operationQueue.shutdown(true);
+				log.error("Flashing node failed with Exception: " + throwable, throwable);
+				closeConnection(operationQueue, connection);
 			}
 
 			@Override
@@ -88,12 +88,21 @@ public class DeviceFlasherCLI {
 			@Override
 			public void onCancel() {
 				log.info("Flashing was canceled!");
-				connection.shutdown(true);
-				operationQueue.shutdown(true);
+				closeConnection(operationQueue, connection);
 			}
 		};
+
 		deviceAsync.program(Files.toByteArray(new File(args[2])), 120000, callback);
 
+	}
+
+	private static void closeConnection(final OperationQueue operationQueue, final SerialPortConnection connection) {
+		try {
+			operationQueue.shutdown(false);
+		} catch (Exception e) {
+			log.error("Exception while shutting down operation queue: " + e, e);
+		}
+		Closeables.closeQuietly(connection);
 	}
 
 }
