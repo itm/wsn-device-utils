@@ -53,6 +53,11 @@
 			<version>1.2</version>
 		</dependency>
 		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 			<version>1.5.8</version>
@@ -78,6 +83,19 @@
 			<version>1.5</version>
 		</dependency>
 
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+			<version>4.8.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<scope>test</scope>
+			<version>1.8.5</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -92,15 +110,42 @@
 				</configuration>
 			</plugin>
 			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+			<plugin>
 				<groupId>org.dstovall</groupId>
 				<artifactId>onejar-maven-plugin-rc8fix</artifactId>
 				<version>1.4.10</version>
 				<executions>
 					<execution>
+						<id>observer</id>
+						<phase>package</phase>
+						<configuration>
+							<mainClass>de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverMain8</mainClass>
+							<onejarVersion>0.98-RC2</onejarVersion>
+							<attachToBuild>true</attachToBuild>
+							<classifier>observer</classifier>
+							<filename>${project.artifactId}-${project.version}-observer.jar</filename>
+							<urlFactory>com.simontuffs.onejar.JarClassLoader$OneJarURLFactory</urlFactory>
+						</configuration>
+						<goals>
+							<goal>one-jar</goal>
+						</goals>
+					</execution>
+					<execution>
 						<id>flash</id>
 						<phase>package</phase>
 						<configuration>
-							<mainClass>de.uniluebeck.itm.wsn.deviceutils.DeviceFlasherCLI</mainClass>
+							<mainClass>de.uniluebeck.itm.wsn.deviceutils.flasher.DeviceFlasherCLI</mainClass>
 							<onejarVersion>0.98-RC2</onejarVersion>
 							<attachToBuild>true</attachToBuild>
 							<classifier>flash</classifier>
@@ -115,7 +160,7 @@
 						<id>listen</id>
 						<phase>package</phase>
 						<configuration>
-							<mainClass>de.uniluebeck.itm.wsn.deviceutils.DeviceListenerCLI</mainClass>
+							<mainClass>de.uniluebeck.itm.wsn.deviceutils.listener.DeviceListenerCLI</mainClass>
 							<onejarVersion>0.98-RC2</onejarVersion>
 							<attachToBuild>true</attachToBuild>
 							<classifier>listen</classifier>
@@ -130,7 +175,7 @@
 						<id>readmac</id>
 						<phase>package</phase>
 						<configuration>
-							<mainClass>de.uniluebeck.itm.wsn.deviceutils.DeviceReadMacCLI</mainClass>
+							<mainClass>de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderCLI</mainClass>
 							<onejarVersion>0.98-RC2</onejarVersion>
 							<attachToBuild>true</attachToBuild>
 							<classifier>readmac</classifier>
@@ -145,7 +190,7 @@
 						<id>writemac</id>
 						<phase>package</phase>
 						<configuration>
-							<mainClass>de.uniluebeck.itm.wsn.deviceutils.DeviceWriteMacCLI</mainClass>
+							<mainClass>de.uniluebeck.itm.wsn.deviceutils.macwriter.DeviceMacWriterCLI</mainClass>
 							<onejarVersion>0.98-RC2</onejarVersion>
 							<attachToBuild>true</attachToBuild>
 							<classifier>writemac</classifier>
