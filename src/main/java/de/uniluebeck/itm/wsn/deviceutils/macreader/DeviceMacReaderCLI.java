@@ -23,23 +23,35 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
-import com.google.common.io.Closeables;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
+import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
-import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
-import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
-import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.async.thread.PausableExecutorOperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.serialport.SerialPortConnection;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactory;
+import de.uniluebeck.itm.wsn.drivers.factories.FactoriesModule;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Properties;
+
 public class DeviceMacReaderCLI {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceMacReaderCLI.class);
+
+	private static final int EXIT_CODE_INVALID_ARGUMENTS = 1;
+
+	private static final int EXIT_CODE_REFERENCE_FILE_NOT_EXISTING = 2;
+
+	private static final int EXIT_CODE_REFERENCE_FILE_NOT_READABLE = 3;
+
+	private static final int EXIT_CODE_REFERENCE_FILE_IS_DIRECTORY = 4;
 
 	public static void main(String[] args) throws Exception {
 
@@ -47,85 +59,91 @@ public class DeviceMacReaderCLI {
 
 		org.apache.log4j.Logger itmLogger = org.apache.log4j.Logger.getLogger("de.uniluebeck.itm");
 		org.apache.log4j.Logger wisebedLogger = org.apache.log4j.Logger.getLogger("eu.wisebed");
-        org.apache.log4j.Logger coaLogger = org.apache.log4j.Logger.getLogger("com.coalesenses");
+		org.apache.log4j.Logger coaLogger = org.apache.log4j.Logger.getLogger("com.coalesenses");
 
-		itmLogger.setLevel(Level.INFO);
-		wisebedLogger.setLevel(Level.INFO);
-		coaLogger.setLevel(Level.INFO);
+		itmLogger.setLevel(Level.WARN);
+		wisebedLogger.setLevel(Level.WARN);
+		coaLogger.setLevel(Level.WARN);
 
 		if (args.length < 2) {
 			System.out.println(
-					"Usage: " + DeviceMacReaderCLI.class.getSimpleName() + " SENSOR_TYPE SERIAL_PORT"
+					"Usage: " + DeviceMacReaderCLI.class
+							.getSimpleName() + " SENSOR_TYPE SERIAL_PORT [REFERENCE_PROPERTIES_FILE]"
 			);
 			System.out.println(
-					"Example: " + DeviceMacReaderCLI.class.getSimpleName() + " isense /dev/ttyUSB0"
+					"Example: " + DeviceMacReaderCLI.class
+							.getSimpleName() + " isense /dev/ttyUSB0 references.properties"
 			);
-			System.exit(1);
+			System.exit(EXIT_CODE_INVALID_ARGUMENTS);
 		}
 
 		final String deviceType = args[0];
 		final String port = args[1];
 
-		final SerialPortConnection connection = ConnectionFactory.create(deviceType);
-		connection.connect(port);
+		DeviceMacReferenceMap deviceMacReferenceMap = null;
 
-		if (!connection.isConnected()) {
-			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
+		if (args.length > 2) {
+			deviceMacReferenceMap = readDeviceMacReferenceMap(args[2]);
 		}
 
-		final OperationQueue operationQueue = new PausableExecutorOperationQueue();
-		final DeviceAsync deviceAsync = DeviceAsyncFactory.create(deviceType, connection, operationQueue);
+		final Injector injector = Guice.createInjector(
+				new FactoriesModule(),
+				new DeviceMacReaderModule(deviceMacReferenceMap)
+		);
 
-		AsyncCallback<MacAddress> callback = new AsyncCallback<MacAddress>() {
-			private int lastProgress = -1;
+		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
+		final DeviceObserver deviceObserver = injector.getInstance(DeviceObserver.class);
 
-			@Override
-			public void onProgressChange(float fraction) {
-				int newProgress = (int) Math.floor(fraction * 100);
-				if (lastProgress < newProgress) {
-					lastProgress = newProgress;
-					log.info("Progress: {}%", newProgress);
-				}
+		final ImmutableList<DeviceEvent> events = deviceObserver.getEvents();
+		String reference = null;
 
+		for (DeviceEvent event : events) {
+			final boolean samePort = port.equals(event.getDeviceInfo().getPort());
+			if (samePort) {
+				reference = event.getDeviceInfo().getReference();
 			}
+		}
 
-			@Override
-			public void onSuccess(MacAddress result) {
-				log.info("Progress: {}%", 100);
-				log.info("Reading MAC address of {} device at port {} done: {}", new Object[] {deviceType, port, result});
-				System.out.println(result);
-				closeConnection(operationQueue, connection);
-			}
+		try {
 
-			@Override
-			public void onFailure(Throwable throwable) {
-				log.error("Reading MAC address failed with Exception: " + throwable, throwable);
-				closeConnection(operationQueue, connection);
-			}
+			final MacAddress macAddress = deviceMacReader.readMac(port, deviceType, reference);
+			log.info("Read MAC address of {} device at port {}: {}", new Object[]{deviceType, port, macAddress});
+			System.out.println(macAddress.toHexString());
 
-			@Override
-			public void onExecute() {
-				log.info("Starting to read MAC address...");
-			}
-
-			@Override
-			public void onCancel() {
-				log.info("Reading MAC address was canceled!");
-				closeConnection(operationQueue, connection);
-			}
-		};
-
-		deviceAsync.readMac(60000, callback);
+		} catch (Exception e) {
+			log.error("Reading MAC address failed with Exception: " + e, e);
+			System.exit(1);
+		}
 
 	}
 
-	private static void closeConnection(final OperationQueue operationQueue, final SerialPortConnection connection) {
-		try {
-			operationQueue.shutdown(false);
-		} catch (Exception e) {
-			log.error("Exception while shutting down operation queue: " + e, e);
+	private static DeviceMacReferenceMap readDeviceMacReferenceMap(final String fileName) throws IOException {
+
+		final DeviceMacReferenceMap deviceMacReferenceMap;
+		final File referenceToMacMapPropertiesFile = new File(fileName);
+
+		if (!referenceToMacMapPropertiesFile.exists()) {
+			log.error("Reference file {} does not exist!");
+			System.exit(EXIT_CODE_REFERENCE_FILE_NOT_EXISTING);
+		} else if (!referenceToMacMapPropertiesFile.canRead()) {
+			log.error("Reference file {} is not readable!");
+			System.exit(EXIT_CODE_REFERENCE_FILE_NOT_READABLE);
+		} else if (referenceToMacMapPropertiesFile.isDirectory()) {
+			log.error("Reference file {} is a directory!");
+			System.exit(EXIT_CODE_REFERENCE_FILE_IS_DIRECTORY);
 		}
-		Closeables.closeQuietly(connection);
+
+		Properties properties = new Properties();
+		properties.load(new FileInputStream(referenceToMacMapPropertiesFile));
+
+		deviceMacReferenceMap = new DeviceMacReferenceMap();
+
+		for (Object key : properties.keySet()) {
+			final String value = (String) properties.get(key);
+			deviceMacReferenceMap.put((String) key, new MacAddress(value));
+		}
+
+		return deviceMacReferenceMap;
 	}
 
 }

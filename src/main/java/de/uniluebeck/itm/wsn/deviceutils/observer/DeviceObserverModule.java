@@ -25,12 +25,15 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReader;
+import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderImpl;
 
 public class DeviceObserverModule implements Module {
 
 	@Override
 	public void configure(final Binder binder) {
-		binder.bind(DeviceObserverCsvProvider.class).to(DeviceObserverCsvProviderImpl.class);
+		binder.bind(DeviceInfoCsvParser.class).to(DeviceInfoCsvParserImpl.class);
+		binder.bind(DeviceCsvProvider.class).to(DeviceCsvProviderImpl.class);
 		binder.bind(DeviceObserver.class).to(DeviceObserverImpl.class);
 	}
 }

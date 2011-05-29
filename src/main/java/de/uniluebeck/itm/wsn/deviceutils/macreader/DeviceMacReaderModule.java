@@ -21,10 +21,32 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                *
  **********************************************************************************************************************/
 
-package de.uniluebeck.itm.wsn.deviceutils.observer;
+package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
-public interface DeviceObserverCsvProvider {
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.util.Providers;
+import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
 
-	public String getMoteCsv();
+public class DeviceMacReaderModule implements Module {
 
+	private final DeviceMacReferenceMap deviceMacReferenceMap;
+
+	public DeviceMacReaderModule(final DeviceMacReferenceMap deviceMacReferenceMap) {
+		this.deviceMacReferenceMap = deviceMacReferenceMap;
+	}
+
+	@Override
+	public void configure(final Binder binder) {
+
+		binder.install(new DeviceObserverModule());
+
+		if (deviceMacReferenceMap == null) {
+			binder.bind(DeviceMacReferenceMap.class).toProvider(Providers.<DeviceMacReferenceMap>of(null));
+		} else {
+			binder.bind(DeviceMacReferenceMap.class).toInstance(deviceMacReferenceMap);
+		}
+
+		binder.bind(DeviceMacReader.class).to(DeviceMacReaderImpl.class);
+	}
 }

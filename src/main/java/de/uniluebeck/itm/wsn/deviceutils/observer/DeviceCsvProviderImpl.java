@@ -23,91 +23,68 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
-import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
+import org.apache.commons.lang.SystemUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.io.File;
+import java.io.IOException;
 
-public class DeviceInfo {
+public class DeviceCsvProviderImpl implements DeviceCsvProvider {
 
-	String type;
-
-	String port;
-
-	String reference;
-
-	MacAddress macAddress;
-
-	public DeviceInfo(final String type, final String port, final String reference, final MacAddress macAddress) {
-
-		checkNotNull(type);
-		checkNotNull(port);
-
-		this.type = type;
-		this.port = port;
-
-		this.reference = reference;
-		this.macAddress = macAddress;
-	}
-
-	public MacAddress getMacAddress() {
-		return macAddress;
-	}
-
-	public String getPort() {
-		return port;
-	}
-
-	public String getReference() {
-		return reference;
-	}
-
-	public String getType() {
-		return type;
-	}
+	private static final Logger log = LoggerFactory.getLogger(DeviceCsvProvider.class);
 
 	@Override
-	public boolean equals(final Object o) {
-		if (this == o) {
-			return true;
+	public String getDeviceCsv() {
+		if (SystemUtils.IS_OS_LINUX) {
+			return getCsv("motelist-linux");
+		} else if (SystemUtils.IS_OS_MAC_OSX) {
+			return getCsv("motelist-macosx");
+		} else if (SystemUtils.IS_OS_WINDOWS_XP) {
+			return getCsv("motelist-windowsxp.exe");
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-
-		final DeviceInfo that = (DeviceInfo) o;
-
-		if (macAddress != null ? !macAddress.equals(that.macAddress) : that.macAddress != null) {
-			return false;
-		}
-		if (!port.equals(that.port)) {
-			return false;
-		}
-		if (reference != null ? !reference.equals(that.reference) : that.reference != null) {
-			return false;
-		}
-		if (!type.equals(that.type)) {
-			return false;
-		}
-
-		return true;
+		throw new RuntimeException(
+				"OS " + SystemUtils.OS_NAME + " " + SystemUtils.OS_VERSION +
+						"(" + SystemUtils.OS_ARCH + ") is currently not supported!"
+		);
 	}
 
-	@Override
-	public int hashCode() {
-		int result = type.hashCode();
-		result = 31 * result + port.hashCode();
-		result = 31 * result + (reference != null ? reference.hashCode() : 0);
-		result = 31 * result + (macAddress != null ? macAddress.hashCode() : 0);
-		return result;
+	private String getCsv(final String scriptName) {
+
+		File tmpFile = copyScriptToTmpFile(scriptName);
+
+		try {
+
+			ProcessBuilder pb = new ProcessBuilder(tmpFile.getAbsolutePath(), "-c");
+			Process p = pb.start();
+			final String csv = new String(ByteStreams.toByteArray(p.getInputStream()));
+			if (!tmpFile.delete()) {
+				tmpFile.deleteOnExit();
+			}
+			return csv;
+
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	@Override
-	public String toString() {
-		return "DeviceInfo{" +
-				"type='" + type + '\'' +
-				", port='" + port + '\'' +
-				", reference='" + reference + '\'' +
-				", macAddress=" + macAddress +
-				'}';
+	private File copyScriptToTmpFile(final String scriptName) {
+
+		try {
+
+			final byte[] scriptBytes = ByteStreams
+					.toByteArray(getClass().getClassLoader().getResourceAsStream(scriptName));
+			File to = File.createTempFile("motelist", "");
+			Files.copy(ByteStreams.newInputStreamSupplier(scriptBytes), to);
+			to.setExecutable(true);
+			return to;
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
 	}
+
 }

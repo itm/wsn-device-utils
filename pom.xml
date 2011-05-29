@@ -39,7 +39,7 @@
 		<dependency>
 			<groupId>de.uniluebeck.itm</groupId>
 			<artifactId>wsn-device-drivers-factories</artifactId>
-			<version>0.4-SNAPSHOT</version>
+			<version>0.3.3</version>
 		</dependency>
 		<dependency>
 			<groupId>de.uniluebeck.itm</groupId>
@@ -130,7 +130,7 @@
 						<id>observer</id>
 						<phase>package</phase>
 						<configuration>
-							<mainClass>de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverMain8</mainClass>
+							<mainClass>de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverMain</mainClass>
 							<onejarVersion>0.98-RC2</onejarVersion>
 							<attachToBuild>true</attachToBuild>
 							<classifier>observer</classifier>
@@ -209,5 +209,45 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+
+	<repositories>
+		<repository>
+			<id>itm-maven-repository-releases</id>
+			<url>http://www.itm.uni-luebeck.de/projects/maven/releases/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>itm-maven-repository-snapshots</id>
+			<url>http://www.itm.uni-luebeck.de/projects/maven/snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>itm-maven-repository-releases</id>
+			<name>ITM UzL Maven releases repository</name>
+			<url>scp://itm01.itm.uni-luebeck.de/www/itm/projects/maven/releases</url>
+		</repository>
+		<snapshotRepository>
+			<id>itm-maven-repository-snapshots</id>
+			<name>ITM UzL Maven snapshots repository</name>
+			<url>scp://itm01.itm.uni-luebeck.de/www/itm/projects/maven/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<scm>
+		<connection>scm:git:https://itm@github.com/itm/wsn-device-utils.git</connection>
+	</scm>
 
 </project>

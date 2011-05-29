@@ -26,14 +26,15 @@ package de.uniluebeck.itm.wsn.deviceutils.macwriter;
 import com.google.common.io.Closeables;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
+import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
 import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
 import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
 import de.uniluebeck.itm.wsn.drivers.core.async.thread.PausableExecutorOperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.serialport.SerialPortConnection;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactory;
+import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +80,7 @@ public class DeviceMacWriterCLI {
 		final String deviceType = args[0];
 		final String port = args[1];
 
-		final SerialPortConnection connection = ConnectionFactory.create(deviceType);
+		final Connection connection = new ConnectionFactoryImpl().create(deviceType);
 		connection.connect(port);
 
 		if (!connection.isConnected()) {
@@ -87,7 +88,7 @@ public class DeviceMacWriterCLI {
 		}
 
 		final OperationQueue operationQueue = new PausableExecutorOperationQueue();
-		final DeviceAsync deviceAsync = DeviceAsyncFactory.create(deviceType, connection, operationQueue);
+		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(deviceType, connection, operationQueue);
 
 		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
 			private int lastProgress = -1;
@@ -133,7 +134,7 @@ public class DeviceMacWriterCLI {
 
 	}
 
-	private static void closeConnection(final OperationQueue operationQueue, final SerialPortConnection connection) {
+	private static void closeConnection(final OperationQueue operationQueue, final Connection connection) {
 		try {
 			operationQueue.shutdown(false);
 		} catch (Exception e) {

@@ -31,9 +31,8 @@ import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
-import de.uniluebeck.itm.wsn.drivers.core.serialport.SerialPortConnection;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
+import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -124,14 +123,14 @@ public class DeviceListenerCLI {
 		}
 		);
 
-		final SerialPortConnection connection = ConnectionFactory.create(deviceType);
+		final Connection connection = new ConnectionFactoryImpl().create(deviceType);
 		connection.connect(port);
 
 		if (!connection.isConnected()) {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final Device<? extends Connection> device = DeviceFactory.create(deviceType, connection);
+		final Device<? extends Connection> device = new DeviceFactoryImpl().create(deviceType, connection);
 
 		// TODO attach netty and fragment decoders to device InputStream and print to writer
 

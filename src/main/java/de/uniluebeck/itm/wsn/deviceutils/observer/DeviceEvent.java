@@ -34,17 +34,20 @@ public class DeviceEvent {
 
 	private final DeviceInfo deviceInfo;
 
+	@SuppressWarnings("unused")
 	public DeviceEvent(final Type type, final DeviceInfo deviceInfo) {
 		this.type = type;
 		this.deviceInfo = deviceInfo;
 	}
 
-	public Type getType() {
-		return type;
-	}
-
+	@SuppressWarnings("unused")
 	public DeviceInfo getDeviceInfo() {
 		return deviceInfo;
+	}
+
+	@SuppressWarnings("unused")
+	public Type getType() {
+		return type;
 	}
 
 	@Override
@@ -58,14 +61,8 @@ public class DeviceEvent {
 
 		final DeviceEvent that = (DeviceEvent) o;
 
-		if (!deviceInfo.equals(that.deviceInfo)) {
-			return false;
-		}
-		if (type != that.type) {
-			return false;
-		}
+		return deviceInfo.equals(that.deviceInfo) && type == that.type;
 
-		return true;
 	}
 
 	@Override

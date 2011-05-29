@@ -21,93 +21,34 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                *
  **********************************************************************************************************************/
 
-package de.uniluebeck.itm.wsn.deviceutils.observer;
+package de.uniluebeck.itm.wsn.deviceutils;
 
-import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.internal.Nullable;
+import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderModule;
+import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
+import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
+import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactory;
+import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+public class DeviceUtilsModule implements Module {
 
-public class DeviceInfo {
+	private DeviceMacReferenceMap deviceMacReferenceMap;
 
-	String type;
-
-	String port;
-
-	String reference;
-
-	MacAddress macAddress;
-
-	public DeviceInfo(final String type, final String port, final String reference, final MacAddress macAddress) {
-
-		checkNotNull(type);
-		checkNotNull(port);
-
-		this.type = type;
-		this.port = port;
-
-		this.reference = reference;
-		this.macAddress = macAddress;
-	}
-
-	public MacAddress getMacAddress() {
-		return macAddress;
-	}
-
-	public String getPort() {
-		return port;
-	}
-
-	public String getReference() {
-		return reference;
-	}
-
-	public String getType() {
-		return type;
+	public DeviceUtilsModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap) {
+		this.deviceMacReferenceMap = deviceMacReferenceMap;
 	}
 
 	@Override
-	public boolean equals(final Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
+	public void configure(final Binder binder) {
 
-		final DeviceInfo that = (DeviceInfo) o;
+		binder.install(new DeviceMacReaderModule(deviceMacReferenceMap));
 
-		if (macAddress != null ? !macAddress.equals(that.macAddress) : that.macAddress != null) {
-			return false;
-		}
-		if (!port.equals(that.port)) {
-			return false;
-		}
-		if (reference != null ? !reference.equals(that.reference) : that.reference != null) {
-			return false;
-		}
-		if (!type.equals(that.type)) {
-			return false;
-		}
-
-		return true;
+		binder.bind(ConnectionFactory.class).to(ConnectionFactoryImpl.class);
+		binder.bind(DeviceFactory.class).to(DeviceFactoryImpl.class);
 	}
 
-	@Override
-	public int hashCode() {
-		int result = type.hashCode();
-		result = 31 * result + port.hashCode();
-		result = 31 * result + (reference != null ? reference.hashCode() : 0);
-		result = 31 * result + (macAddress != null ? macAddress.hashCode() : 0);
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "DeviceInfo{" +
-				"type='" + type + '\'' +
-				", port='" + port + '\'' +
-				", reference='" + reference + '\'' +
-				", macAddress=" + macAddress +
-				'}';
-	}
 }

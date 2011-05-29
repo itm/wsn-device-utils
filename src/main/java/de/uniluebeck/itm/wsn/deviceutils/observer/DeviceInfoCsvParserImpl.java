@@ -23,114 +23,56 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
-import de.uniluebeck.itm.tr.util.AbstractListenable;
-import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-class DeviceObserverImpl extends AbstractListenable<DeviceObserverListener> implements DeviceObserver {
+public class DeviceInfoCsvParserImpl implements DeviceInfoCsvParser {
 
-	private static final Logger log = LoggerFactory.getLogger(DeviceObserver.class);
+	private static final int CSV_INDEX_PORT = 1;
 
-	private ImmutableList<DeviceInfo> oldInfos = ImmutableList.of();
+	private static final int CSV_INDEX_REFERENCE = 0;
 
-	@Inject
-	private DeviceMacReader deviceMacReader;
+	private static final int CSV_INDEX_TYPE = 2;
 
-	@Inject
-	private DeviceCsvProvider deviceCsvProvider;
+	private final Splitter rowSplitter = Splitter.on("\n").trimResults();
 
-	@Inject
-	private DeviceInfoCsvParserImpl deviceInfoCsvParser;
+	private final Splitter colSplitter = Splitter.on(",").trimResults();
 
 	@Override
-	public ImmutableList<DeviceEvent> getEvents() {
+	public ImmutableList<DeviceInfo> parseCsv(final String csv) {
 
-		final ImmutableList<DeviceInfo> newInfos = deviceInfoCsvParser.parseCsv(deviceCsvProvider.getDeviceCsv());
-		final ImmutableList<DeviceEvent> events = deriveEvents(newInfos);
-		oldInfos = newInfos;
-		return events;
-	}
+		final Iterable<String> rows = rowSplitter.split(csv);
+		final ImmutableList.Builder<DeviceInfo> newStatesBuilder = ImmutableList.builder();
 
-	@Override
-	public void run() {
-		for (DeviceEvent event : getEvents()) {
-			notifyListeners(event);
-		}
-	}
-
-
-	private ImmutableList<DeviceEvent> deriveEvents(final List<DeviceInfo> newInfos) {
-
-		final ImmutableList.Builder<DeviceEvent> resultBuilder = ImmutableList.builder();
-		resultBuilder.addAll(deriveAttachedEvents(newInfos));
-		resultBuilder.addAll(deriveRemovedEvents(newInfos));
-		return resultBuilder.build();
-	}
-
-	private List<DeviceEvent> deriveAttachedEvents(final List<DeviceInfo> newInfos) {
-
-		List<DeviceEvent> events = Lists.newArrayList();
-		for (DeviceInfo newInfo : newInfos) {
-
-			DeviceInfo oldInfo = getOldStateForPort(newInfo.port);
-			if (oldInfo == null) {
-
-				tryToEnrichWithMacAddress(newInfo);
-				events.add(new DeviceEvent(DeviceEvent.Type.ATTACHED, newInfo));
+		for (String row : rows) {
+			DeviceInfo info = parseRow(row);
+			if (info != null) {
+				newStatesBuilder.add(info);
 			}
 		}
 
-		return events;
+		return newStatesBuilder.build();
 	}
 
-	private void tryToEnrichWithMacAddress(final DeviceInfo deviceInfo) {
-		try {
-			deviceInfo.macAddress = deviceMacReader.readMac(deviceInfo.port, deviceInfo.type, deviceInfo.reference);
-		} catch (Exception e) {
-			log.info("Could not read MAC address of {} on port {}. Reason: {}",
-					new Object[]{deviceInfo.type, deviceInfo.type, e}
-			);
+	private DeviceInfo parseRow(final String row) {
+
+		if ("".equals(row)) {
+			return null;
 		}
-	}
 
-	private List<DeviceEvent> deriveRemovedEvents(final List<DeviceInfo> newInfos) {
-
-		List<DeviceEvent> events = Lists.newArrayList();
-		for (DeviceInfo oldInfo : oldInfos) {
-
-			boolean found = false;
-
-			for (DeviceInfo newInfo : newInfos) {
-				if (newInfo.port.equals(oldInfo.port)) {
-					found = true;
-				}
-			}
-
-			if (!found) {
-				events.add(new DeviceEvent(DeviceEvent.Type.REMOVED, oldInfo));
-			}
+		final List<String> columns = Lists.newArrayList(colSplitter.split(row));
+		if (columns.size() != 3) {
+			throw new RuntimeException("Every row in the CSV file must have at least and at most three columns!");
 		}
-		return events;
+
+		return new DeviceInfo(
+				columns.get(CSV_INDEX_TYPE), columns.get(CSV_INDEX_PORT),
+				columns.get(CSV_INDEX_REFERENCE),
+				null
+		);
 	}
 
-	private DeviceInfo getOldStateForPort(final String port) {
-		for (DeviceInfo oldInfo : oldInfos) {
-			if (oldInfo.port.equals(port)) {
-				return oldInfo;
-			}
-		}
-		return null;
-	}
-
-	private void notifyListeners(final DeviceEvent event) {
-		for (DeviceObserverListener listener : listeners) {
-			listener.deviceEvent(event);
-		}
-	}
 }
