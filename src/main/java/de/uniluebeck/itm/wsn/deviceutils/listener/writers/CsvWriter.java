@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.listener.writers;
 
+import com.google.common.base.Joiner;
 import de.uniluebeck.itm.tr.util.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -42,32 +43,36 @@ public class CsvWriter implements Writer {
 
 	private final DateTimeFormatter timeFormatter = DateTimeFormat.fullDateTime();
 
+	private final Joiner joiner = Joiner.on(";");
+
 	public CsvWriter(OutputStream out) throws IOException {
 		this.output = new BufferedWriter(new OutputStreamWriter(out));
-		this.output.write("\"Time\";\"Type\";\"Content as String\";\"Content as Hex-Bytes\";\"Unix-Timestamp\"\n");
+		this.output.write(
+				joiner.join(
+						"\"Time\"",
+						"\"Content as String\"",
+						"\"Content as Hex-Bytes\"",
+						"\"Unix-Timestamp\""
+				)
+		);
+		this.output.write("\n");
 	}
 
 	@Override
 	public void write(byte[] packet) {
 		try {
 
-			output.write("\", Hex=\"");
-			output.write(StringUtils.toHexString(packet));
-			output.write("\"");
+			this.output.write(
+					joiner.join(
+							"\"" + timeFormatter.print(new DateTime()) + "\"",
+							"\"" + StringUtils.replaceNonPrintableAsciiCharacters(new String(packet)) + "\"",
+							"\"" + StringUtils.toHexString(packet) + "\"",
+							Long.toString(System.currentTimeMillis() / 1000)
+					)
+			);
 			output.newLine();
 			output.flush();
 
-			output.write("\"");
-			output.write(timeFormatter.print(new DateTime()));
-			output.write("\";\"");
-			output.write(StringUtils.replaceNonPrintableAsciiCharacters(new String(packet)));
-			output.write("\";\"");
-			output.write(StringUtils.toHexString(packet));
-			output.write("\";\"");
-			output.write("" + (System.currentTimeMillis() / 1000));
-			output.write("\"");
-			output.newLine();
-			output.flush();
 		} catch (IOException e) {
 			log.warn("Unable to write message:" + e, e);
 		}

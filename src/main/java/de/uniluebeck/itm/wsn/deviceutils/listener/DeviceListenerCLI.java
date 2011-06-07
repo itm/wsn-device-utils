@@ -24,23 +24,45 @@
 package de.uniluebeck.itm.wsn.deviceutils.listener;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimaps;
+import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoder;
+import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoderFactory;
+import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingEncoder;
+import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingEncoderFactory;
 import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.tr.util.StringUtils;
+import de.uniluebeck.itm.tr.util.Tuple;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
+import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
+import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
+import de.uniluebeck.itm.wsn.drivers.core.async.thread.PausableExecutorOperationQueue;
 import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.iostream.IOStreamAddress;
+import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
+import org.jboss.netty.util.CharsetUtil;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DeviceListenerCLI {
 
@@ -130,9 +152,52 @@ public class DeviceListenerCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final Device<? extends Connection> device = new DeviceFactoryImpl().create(deviceType, connection);
+		OperationQueue operationQueue = new PausableExecutorOperationQueue();
+		final DeviceAsync deviceAsync =
+				new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(deviceType, connection, operationQueue);
 
-		// TODO attach netty and fragment decoders to device InputStream and print to writer
+		final InputStream inputStream = deviceAsync.getInputStream();
+		final OutputStream outputStream = deviceAsync.getOutputStream();
+
+		final ExecutorService executorService = Executors.newCachedThreadPool();
+		final ClientBootstrap bootstrap = new ClientBootstrap(new IOStreamChannelFactory(executorService));
+
+		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			public ChannelPipeline getPipeline() throws Exception {
+				DefaultChannelPipeline pipeline = new DefaultChannelPipeline();
+
+				final List<Tuple<String, ChannelHandler>> decoders = new DleStxEtxFramingDecoderFactory().create(
+						"frameDecoder",
+						HashMultimap.<String, String>create()
+				);
+				pipeline.addLast("frameDecoder", decoders.get(0).getSecond());
+
+				final List<Tuple<String,ChannelHandler>> encoders = new DleStxEtxFramingEncoderFactory().create(
+						"frameEncoder",
+						HashMultimap.<String, String>create()
+				);
+				pipeline.addLast("frameEncoder", encoders.get(0).getSecond());
+
+				pipeline.addLast("loggingHandler", new SimpleChannelHandler() {
+					@Override
+					public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e)
+							throws Exception {
+						final ChannelBuffer message = (ChannelBuffer) e.getMessage();
+						byte[] messageBytes = new byte[message.readableBytes()];
+						message.readBytes(messageBytes);
+						finalOutWriter.write(messageBytes);
+					}
+				}
+				);
+				return pipeline;
+			}
+		});
+
+		// Make a new connection.
+		ChannelFuture connectFuture = bootstrap.connect(new IOStreamAddress(inputStream, outputStream));
+
+		// Wait until the connection is made successfully.
+		Channel channel = connectFuture.awaitUninterruptibly().getChannel();
 
 	}
 
