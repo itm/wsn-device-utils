@@ -113,7 +113,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 					int newProgress = (int) Math.floor(fraction * 100);
 					if (lastProgress < newProgress) {
 						lastProgress = newProgress;
-						log.info("Progress: {}%", newProgress);
+						log.debug("Progress: {}%", newProgress);
 					}
 				}
 			}
