@@ -38,14 +38,21 @@ public class DeviceUtilsModule implements Module {
 
 	private DeviceMacReferenceMap deviceMacReferenceMap;
 
+	private final boolean use16BitMode;
+
 	public DeviceUtilsModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap) {
+		this(deviceMacReferenceMap, true);
+	}
+
+	public DeviceUtilsModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap, final boolean use16BitMode) {
 		this.deviceMacReferenceMap = deviceMacReferenceMap;
+		this.use16BitMode = use16BitMode;
 	}
 
 	@Override
 	public void configure(final Binder binder) {
 
-		binder.install(new DeviceMacReaderModule(deviceMacReferenceMap));
+		binder.install(new DeviceMacReaderModule(deviceMacReferenceMap, use16BitMode));
 
 		binder.bind(ConnectionFactory.class).to(ConnectionFactoryImpl.class);
 		binder.bind(DeviceFactory.class).to(DeviceFactoryImpl.class);

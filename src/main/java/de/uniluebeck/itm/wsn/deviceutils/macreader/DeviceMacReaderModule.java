@@ -25,6 +25,7 @@ package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.name.Names;
 import com.google.inject.util.Providers;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
 
@@ -32,8 +33,15 @@ public class DeviceMacReaderModule implements Module {
 
 	private final DeviceMacReferenceMap deviceMacReferenceMap;
 
+	private final boolean use16BitMode;
+
 	public DeviceMacReaderModule(final DeviceMacReferenceMap deviceMacReferenceMap) {
+		this(deviceMacReferenceMap, true);
+	}
+
+	public DeviceMacReaderModule(final DeviceMacReferenceMap deviceMacReferenceMap, final boolean use16BitMode) {
 		this.deviceMacReferenceMap = deviceMacReferenceMap;
+		this.use16BitMode = use16BitMode;
 	}
 
 	@Override
@@ -47,6 +55,7 @@ public class DeviceMacReaderModule implements Module {
 			binder.bind(DeviceMacReferenceMap.class).toInstance(deviceMacReferenceMap);
 		}
 
+		binder.bind(Boolean.class).annotatedWith(Names.named("use16BitMode")).toInstance(use16BitMode);
 		binder.bind(DeviceMacReader.class).to(DeviceMacReaderImpl.class);
 	}
 }

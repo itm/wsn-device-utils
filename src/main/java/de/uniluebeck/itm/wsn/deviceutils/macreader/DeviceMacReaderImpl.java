@@ -27,6 +27,7 @@ import com.google.common.io.Closeables;
 import com.google.inject.Inject;
 import com.google.inject.internal.ImmutableMap;
 import com.google.inject.internal.Nullable;
+import com.google.inject.name.Named;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
@@ -43,20 +44,19 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceMacReaderImpl.class);
 
-	private final ConnectionFactory connectionFactory;
-
-	private final DeviceFactory deviceFactory;
-
-	private final DeviceMacReferenceMap referenceToMacMap;
+	@Inject
+	private ConnectionFactory connectionFactory;
 
 	@Inject
-	public DeviceMacReaderImpl(final ConnectionFactory connectionFactory, final DeviceFactory deviceFactory,
-							   final @Nullable DeviceMacReferenceMap referenceToMacMap) {
+	private DeviceFactory deviceFactory;
 
-		this.connectionFactory = connectionFactory;
-		this.deviceFactory = deviceFactory;
-		this.referenceToMacMap = referenceToMacMap;
-	}
+	@Inject
+	@Nullable
+	private DeviceMacReferenceMap referenceToMacMap;
+
+	@Inject(optional = true)
+	@Named("use16BitMode")
+	private Boolean use16BitMode = true;
 
 	@Override
 	public MacAddress readMac(final String port, final String deviceTypeString, @Nullable final String reference)
@@ -104,7 +104,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 			final Device device = deviceFactory.create(deviceType, connection);
 			final ReadMacAddressOperation readMacAddressOperation = device.createReadMacAddressOperation();
 
-			return readMacAddressOperation.execute(new RootProgressManager(new Monitor() {
+			MacAddress macAddress = readMacAddressOperation.execute(new RootProgressManager(new Monitor() {
 
 				private int lastProgress = -1;
 
@@ -119,6 +119,12 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 			}
 			)
 			);
+
+			if (use16BitMode) {
+				macAddress = macAddress.to16BitMacAddress();
+			}
+
+			return macAddress;
 
 		} finally {
 			Closeables.closeQuietly(connection);

@@ -106,6 +106,7 @@ public class DeviceObserverTest {
 			public void configure(final Binder binder) {
 				binder.bind(DeviceMacReader.class).toInstance(deviceMacReader);
 				binder.bind(DeviceCsvProvider.class).toInstance(deviceCsvProvider);
+				binder.bind(DeviceInfoCsvParser.class).to(DeviceInfoCsvParserImpl.class);
 				binder.bind(DeviceObserver.class).to(DeviceObserverImpl.class);
 			}
 		}

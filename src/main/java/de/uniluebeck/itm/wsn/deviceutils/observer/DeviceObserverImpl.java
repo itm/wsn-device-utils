@@ -46,7 +46,7 @@ class DeviceObserverImpl extends AbstractListenable<DeviceObserverListener> impl
 	private DeviceCsvProvider deviceCsvProvider;
 
 	@Inject
-	private DeviceInfoCsvParserImpl deviceInfoCsvParser;
+	private DeviceInfoCsvParser deviceInfoCsvParser;
 
 	@Override
 	public ImmutableList<DeviceEvent> getEvents() {
