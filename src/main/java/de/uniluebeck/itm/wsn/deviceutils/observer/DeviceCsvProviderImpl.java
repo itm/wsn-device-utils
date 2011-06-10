@@ -39,11 +39,11 @@ public class DeviceCsvProviderImpl implements DeviceCsvProvider {
 	@Override
 	public String getDeviceCsv() {
 		if (SystemUtils.IS_OS_LINUX) {
-			return getCsv("motelist-linux");
+			return getCsv("devicelist-linux");
 		} else if (SystemUtils.IS_OS_MAC_OSX) {
-			return getCsv("motelist-macosx");
+			return getCsv("devicelist-macosx");
 		} else if (SystemUtils.IS_OS_WINDOWS_XP) {
-			return getCsv("motelist-windowsxp.exe");
+			return getCsv("devicelist-windowsxp.exe");
 		}
 		throw new RuntimeException(
 				"OS " + SystemUtils.OS_NAME + " " + SystemUtils.OS_VERSION +
@@ -74,11 +74,14 @@ public class DeviceCsvProviderImpl implements DeviceCsvProvider {
 
 		try {
 
-			final byte[] scriptBytes = ByteStreams
-					.toByteArray(getClass().getClassLoader().getResourceAsStream(scriptName));
-			File to = File.createTempFile("motelist", "");
+			final byte[] scriptBytes = ByteStreams.toByteArray(
+					getClass().getClassLoader().getResourceAsStream(scriptName)
+			);
+			File to = File.createTempFile("devicelist", "");
 			Files.copy(ByteStreams.newInputStreamSupplier(scriptBytes), to);
-			to.setExecutable(true);
+			if (!to.setExecutable(true)) {
+				throw new RuntimeException("Could not set executable flag on devicelist script!");
+			}
 			return to;
 
 		} catch (Exception e) {

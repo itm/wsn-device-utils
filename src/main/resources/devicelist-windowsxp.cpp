@@ -1,4 +1,4 @@
-// $Id: motelist-win32.cpp,v 1.5 2010/06/29 22:07:42 scipio Exp $
+// $Id: devicelist-win32.cpp,v 1.5 2010/06/29 22:07:42 scipio Exp $
 
 /* Copyright (c) 2000-2003 The Regents of the University of California.  
  * All rights reserved.
@@ -505,7 +505,7 @@ ListDevice getActiveDevices( const ListDevice& devs )
 
 void usage()
 {
-  cout << "usage: motelist [-l] [-c]\n"
+  cout << "usage: devicelist [-l] [-c]\n"
        << "\n"
        << "  $Revision: 1.5 $ $Date: 2010/06/29 22:07:42 $\n"
        << "\n"
