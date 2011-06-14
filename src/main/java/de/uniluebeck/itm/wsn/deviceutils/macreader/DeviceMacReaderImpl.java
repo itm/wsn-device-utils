@@ -25,7 +25,6 @@ package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
 import com.google.common.io.Closeables;
 import com.google.inject.Inject;
-import com.google.inject.internal.ImmutableMap;
 import com.google.inject.internal.Nullable;
 import com.google.inject.name.Named;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
@@ -93,7 +92,13 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 	private MacAddress readMacFromDevice(final String port, final DeviceType deviceType) throws Exception {
 
 		final Connection connection = connectionFactory.create(deviceType);
-		connection.connect(port);
+		try {
+			connection.connect(port);
+		} catch (Exception e) {
+			throw new Exception(
+					"Connection to device at port \"" + port + "\" could not be established. Reason: " + e.getMessage()
+			);
+		}
 
 		if (!connection.isConnected()) {
 			throw new Exception("Connection to device at port \"" + port + "\" could not be established!");
