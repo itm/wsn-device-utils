@@ -93,8 +93,8 @@ class DeviceObserverImpl extends AbstractListenable<DeviceObserverListener> impl
 		try {
 			deviceInfo.macAddress = deviceMacReader.readMac(deviceInfo.port, deviceInfo.type, deviceInfo.reference);
 		} catch (Exception e) {
-			log.info("Could not read MAC address of {} on port {}. Reason: {}",
-					new Object[]{deviceInfo.type, deviceInfo.type, e}
+			log.debug("Could not read MAC address of {} node on port {}. Reason: {}",
+					new Object[]{deviceInfo.type, deviceInfo.port, e}
 			);
 		}
 	}
