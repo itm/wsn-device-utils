@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.wsn.deviceutils.macwriter;
 
 import com.google.common.io.Closeables;
+import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
@@ -38,6 +39,10 @@ import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class DeviceMacWriterCLI {
 
@@ -88,7 +93,8 @@ public class DeviceMacWriterCLI {
 		}
 
 		final OperationQueue operationQueue = new PausableExecutorOperationQueue();
-		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(deviceType, connection, operationQueue);
+		final ExecutorService executorService = Executors.newCachedThreadPool();
+		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
 
 		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
 			private int lastProgress = -1;
@@ -109,13 +115,13 @@ public class DeviceMacWriterCLI {
 				log.info("Writing MAC address {} of {} device at port {} done!",
 						new Object[]{macAddress, deviceType, port}
 				);
-				closeConnection(operationQueue, connection);
+				closeConnection(executorService, operationQueue, connection);
 			}
 
 			@Override
 			public void onFailure(Throwable throwable) {
 				log.error("Writing MAC address failed with Exception: " + throwable, throwable);
-				closeConnection(operationQueue, connection);
+				closeConnection(executorService, operationQueue, connection);
 			}
 
 			@Override
@@ -126,7 +132,7 @@ public class DeviceMacWriterCLI {
 			@Override
 			public void onCancel() {
 				log.info("Writing MAC address was canceled!");
-				closeConnection(operationQueue, connection);
+				closeConnection(executorService, operationQueue, connection);
 			}
 		};
 
@@ -134,13 +140,15 @@ public class DeviceMacWriterCLI {
 
 	}
 
-	private static void closeConnection(final OperationQueue operationQueue, final Connection connection) {
+	private static void closeConnection(final ExecutorService executorService, final OperationQueue operationQueue,
+										final Connection connection) {
 		try {
 			operationQueue.shutdown(false);
 		} catch (Exception e) {
 			log.error("Exception while shutting down operation queue: " + e, e);
 		}
 		Closeables.closeQuietly(connection);
+		ExecutorUtils.shutdown(executorService, 10, TimeUnit.SECONDS);
 	}
 
 }

@@ -25,6 +25,7 @@ package de.uniluebeck.itm.wsn.deviceutils.flasher;
 
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
+import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
@@ -39,6 +40,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class DeviceFlasherCLI {
 
@@ -75,7 +79,8 @@ public class DeviceFlasherCLI {
 		}
 
 		final OperationQueue operationQueue = new PausableExecutorOperationQueue();
-		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(deviceType, connection, operationQueue);
+		final ExecutorService executorService = Executors.newCachedThreadPool();
+		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
 
 		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
 			private int lastProgress = -1;
@@ -94,13 +99,13 @@ public class DeviceFlasherCLI {
 			public void onSuccess(Void result) {
 				log.info("Progress: {}%", 100);
 				log.info("Flashing node done!");
-				closeConnection(operationQueue, connection);
+				closeConnection(executorService, operationQueue, connection);
 			}
 
 			@Override
 			public void onFailure(Throwable throwable) {
 				log.error("Flashing node failed with Exception: " + throwable, throwable);
-				closeConnection(operationQueue, connection);
+				closeConnection(executorService, operationQueue, connection);
 			}
 
 			@Override
@@ -111,7 +116,7 @@ public class DeviceFlasherCLI {
 			@Override
 			public void onCancel() {
 				log.info("Flashing was canceled!");
-				closeConnection(operationQueue, connection);
+				closeConnection(executorService, operationQueue, connection);
 			}
 		};
 
@@ -119,13 +124,14 @@ public class DeviceFlasherCLI {
 
 	}
 
-	private static void closeConnection(final OperationQueue operationQueue, final Connection connection) {
+	private static void closeConnection(final ExecutorService executorService, final OperationQueue operationQueue, final Connection connection) {
 		try {
 			operationQueue.shutdown(false);
 		} catch (Exception e) {
 			log.error("Exception while shutting down operation queue: " + e, e);
 		}
 		Closeables.closeQuietly(connection);
+		ExecutorUtils.shutdown(executorService, 10, TimeUnit.SECONDS);
 	}
 
 }

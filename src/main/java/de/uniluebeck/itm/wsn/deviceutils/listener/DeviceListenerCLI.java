@@ -25,20 +25,15 @@ package de.uniluebeck.itm.wsn.deviceutils.listener;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimaps;
-import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoder;
 import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoderFactory;
-import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingEncoder;
 import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingEncoderFactory;
 import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.tr.util.Tuple;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
-import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
 import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
 import de.uniluebeck.itm.wsn.drivers.core.async.thread.PausableExecutorOperationQueue;
@@ -53,7 +48,6 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.iostream.IOStreamAddress;
 import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
-import org.jboss.netty.util.CharsetUtil;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileOutputStream;
@@ -153,13 +147,13 @@ public class DeviceListenerCLI {
 		}
 
 		OperationQueue operationQueue = new PausableExecutorOperationQueue();
+		final ExecutorService executorService = Executors.newCachedThreadPool();
 		final DeviceAsync deviceAsync =
-				new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(deviceType, connection, operationQueue);
+				new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
 
 		final InputStream inputStream = deviceAsync.getInputStream();
 		final OutputStream outputStream = deviceAsync.getOutputStream();
 
-		final ExecutorService executorService = Executors.newCachedThreadPool();
 		final ClientBootstrap bootstrap = new ClientBootstrap(new IOStreamChannelFactory(executorService));
 
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {

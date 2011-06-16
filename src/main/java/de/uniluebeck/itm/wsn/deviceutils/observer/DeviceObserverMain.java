@@ -58,6 +58,7 @@ public class DeviceObserverMain {
 		Logging.setLoggingDefaults();
 
 		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm").setLevel(Level.INFO);
+		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm.wsn.drivers").setLevel(Level.ERROR);
 		org.apache.log4j.Logger.getLogger("eu.wisebed").setLevel(Level.INFO);
         org.apache.log4j.Logger.getLogger("com.coalesenses").setLevel(Level.INFO);
 

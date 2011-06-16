@@ -31,6 +31,7 @@ import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.Monitor;
+import de.uniluebeck.itm.wsn.drivers.core.exception.PortNotFoundException;
 import de.uniluebeck.itm.wsn.drivers.core.operation.ReadMacAddressOperation;
 import de.uniluebeck.itm.wsn.drivers.core.operation.RootProgressManager;
 import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactory;
@@ -91,16 +92,9 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 
 	private MacAddress readMacFromDevice(final String port, final DeviceType deviceType) throws Exception {
 
-		final Connection connection = connectionFactory.create(deviceType);
-		try {
-			connection.connect(port);
-		} catch (Exception e) {
-			throw new Exception(
-					"Connection to device at port \"" + port + "\" could not be established. Reason: " + e.getMessage()
-			);
-		}
+		final Connection connection = tryToConnect(deviceType, port);
 
-		if (!connection.isConnected()) {
+		if (connection == null || !connection.isConnected()) {
 			throw new Exception("Connection to device at port \"" + port + "\" could not be established!");
 		}
 
@@ -134,5 +128,23 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 		} finally {
 			Closeables.closeQuietly(connection);
 		}
+	}
+
+	private Connection tryToConnect(final DeviceType deviceType, final String port) throws Exception {
+
+		final Connection connection = connectionFactory.create(deviceType);
+
+		for (int i = 0; i < 10; i++) {
+			try {
+				connection.connect(port);
+				return connection;
+			} catch (PortNotFoundException e) {
+				Thread.sleep(100);
+			} catch (Exception e) {
+				return null;
+			}
+		}
+
+		return null;
 	}
 }
