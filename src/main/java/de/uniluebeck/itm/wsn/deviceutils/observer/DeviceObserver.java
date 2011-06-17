@@ -28,6 +28,13 @@ import de.uniluebeck.itm.tr.util.Listenable;
 
 public interface DeviceObserver extends Runnable, Listenable<DeviceObserverListener> {
 
+	/**
+	 * Same as calling getEvents(true).
+	 *
+	 * @return
+	 */
 	ImmutableList<DeviceEvent> getEvents();
+
+	ImmutableList<DeviceEvent> getEvents(boolean readMac);
 
 }

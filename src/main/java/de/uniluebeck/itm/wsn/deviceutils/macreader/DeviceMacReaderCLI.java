@@ -94,7 +94,7 @@ public class DeviceMacReaderCLI {
 		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
 		final DeviceObserver deviceObserver = injector.getInstance(DeviceObserver.class);
 
-		final ImmutableList<DeviceEvent> events = deviceObserver.getEvents();
+		final ImmutableList<DeviceEvent> events = deviceObserver.getEvents(false);
 		String reference = null;
 
 		for (DeviceEvent event : events) {

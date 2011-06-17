@@ -50,9 +50,13 @@ class DeviceObserverImpl extends AbstractListenable<DeviceObserverListener> impl
 
 	@Override
 	public ImmutableList<DeviceEvent> getEvents() {
+		return getEvents(true);
+	}
 
+	@Override
+	public ImmutableList<DeviceEvent> getEvents(final boolean readMac) {
 		final ImmutableList<DeviceInfo> newInfos = deviceInfoCsvParser.parseCsv(deviceCsvProvider.getDeviceCsv());
-		final ImmutableList<DeviceEvent> events = deriveEvents(newInfos);
+		final ImmutableList<DeviceEvent> events = deriveEvents(newInfos, readMac);
 		oldInfos = newInfos;
 		return events;
 	}
@@ -65,15 +69,15 @@ class DeviceObserverImpl extends AbstractListenable<DeviceObserverListener> impl
 	}
 
 
-	private ImmutableList<DeviceEvent> deriveEvents(final List<DeviceInfo> newInfos) {
+	private ImmutableList<DeviceEvent> deriveEvents(final List<DeviceInfo> newInfos, final boolean readMac) {
 
 		final ImmutableList.Builder<DeviceEvent> resultBuilder = ImmutableList.builder();
-		resultBuilder.addAll(deriveAttachedEvents(newInfos));
+		resultBuilder.addAll(deriveAttachedEvents(newInfos, readMac));
 		resultBuilder.addAll(deriveRemovedEvents(newInfos));
 		return resultBuilder.build();
 	}
 
-	private List<DeviceEvent> deriveAttachedEvents(final List<DeviceInfo> newInfos) {
+	private List<DeviceEvent> deriveAttachedEvents(final List<DeviceInfo> newInfos, final boolean readMac) {
 
 		List<DeviceEvent> events = Lists.newArrayList();
 		for (DeviceInfo newInfo : newInfos) {
@@ -81,7 +85,9 @@ class DeviceObserverImpl extends AbstractListenable<DeviceObserverListener> impl
 			DeviceInfo oldInfo = getOldStateForPort(newInfo.port);
 			if (oldInfo == null) {
 
-				tryToEnrichWithMacAddress(newInfo);
+				if (readMac) {
+					tryToEnrichWithMacAddress(newInfo);
+				}
 				events.add(new DeviceEvent(DeviceEvent.Type.ATTACHED, newInfo));
 			}
 		}
