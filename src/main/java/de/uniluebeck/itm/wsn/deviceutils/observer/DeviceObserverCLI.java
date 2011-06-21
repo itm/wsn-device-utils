@@ -27,7 +27,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
-import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderModule;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import org.apache.log4j.Level;
@@ -43,9 +42,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-public class DeviceObserverMain {
+public class DeviceObserverCLI {
 
-	private static final Logger log = LoggerFactory.getLogger(DeviceObserverMain.class);
+	private static final Logger log = LoggerFactory.getLogger(DeviceObserverCLI.class);
 
 	private static final int EXIT_CODE_REFERENCE_FILE_NOT_EXISTING = 2;
 
@@ -57,10 +56,10 @@ public class DeviceObserverMain {
 
 		Logging.setLoggingDefaults();
 
-		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm").setLevel(Level.INFO);
 		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm.wsn.drivers").setLevel(Level.ERROR);
+		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm").setLevel(Level.INFO);
 		org.apache.log4j.Logger.getLogger("eu.wisebed").setLevel(Level.INFO);
-        org.apache.log4j.Logger.getLogger("com.coalesenses").setLevel(Level.INFO);
+		org.apache.log4j.Logger.getLogger("com.coalesenses").setLevel(Level.INFO);
 
 		DeviceMacReferenceMap deviceMacReferenceMap = null;
 

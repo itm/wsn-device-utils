@@ -30,8 +30,8 @@ import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
 import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
+import de.uniluebeck.itm.wsn.drivers.core.async.ExecutorServiceOperationQueue;
 import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.async.thread.PausableExecutorOperationQueue;
 import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
@@ -78,8 +78,8 @@ public class DeviceFlasherCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final OperationQueue operationQueue = new PausableExecutorOperationQueue();
 		final ExecutorService executorService = Executors.newCachedThreadPool();
+		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService);
 		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
 
 		AsyncCallback<Void> callback = new AsyncCallback<Void>() {

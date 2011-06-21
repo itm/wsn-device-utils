@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.wsn.deviceutils.macwriter;
 
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
@@ -31,8 +32,8 @@ import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
 import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
+import de.uniluebeck.itm.wsn.drivers.core.async.ExecutorServiceOperationQueue;
 import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.async.thread.PausableExecutorOperationQueue;
 import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
@@ -52,13 +53,10 @@ public class DeviceMacWriterCLI {
 
 		Logging.setLoggingDefaults();
 
-		org.apache.log4j.Logger itmLogger = org.apache.log4j.Logger.getLogger("de.uniluebeck.itm");
-		org.apache.log4j.Logger wisebedLogger = org.apache.log4j.Logger.getLogger("eu.wisebed");
-        org.apache.log4j.Logger coaLogger = org.apache.log4j.Logger.getLogger("com.coalesenses");
-
-		itmLogger.setLevel(Level.INFO);
-		wisebedLogger.setLevel(Level.INFO);
-		coaLogger.setLevel(Level.INFO);
+		org.apache.log4j.Logger.getLogger("com.coalesenses").setLevel(Level.INFO);
+		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm").setLevel(Level.DEBUG);
+		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm.wsn.deviceutils").setLevel(Level.INFO);
+		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm.wsn.drivers").setLevel(Level.INFO);
 
 		if (args.length < 3) {
 			System.out.println(
@@ -71,7 +69,7 @@ public class DeviceMacWriterCLI {
 		}
 
 		long macAddressLower16 = StringUtils.parseHexOrDecLong(args[2]);
-		final MacAddress macAddress = new MacAddress(new byte[] {
+		final MacAddress macAddress = new MacAddress(new byte[]{
 				0,
 				0,
 				0,
@@ -80,7 +78,8 @@ public class DeviceMacWriterCLI {
 				0,
 				(byte) (0xFF & (macAddressLower16 >> 8)),
 				(byte) (0xFF & (macAddressLower16))
-		});
+		}
+		);
 
 		final String deviceType = args[0];
 		final String port = args[1];
@@ -92,9 +91,18 @@ public class DeviceMacWriterCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final OperationQueue operationQueue = new PausableExecutorOperationQueue();
-		final ExecutorService executorService = Executors.newCachedThreadPool();
-		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
+		final ExecutorService executorService = Executors.newCachedThreadPool(
+				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
+		);
+
+		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService);
+
+		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(
+				executorService,
+				deviceType,
+				connection,
+				operationQueue
+		);
 
 		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
 			private int lastProgress = -1;
@@ -115,13 +123,13 @@ public class DeviceMacWriterCLI {
 				log.info("Writing MAC address {} of {} device at port {} done!",
 						new Object[]{macAddress, deviceType, port}
 				);
-				closeConnection(executorService, operationQueue, connection);
+				closeConnection(deviceAsync, executorService, operationQueue, connection);
 			}
 
 			@Override
 			public void onFailure(Throwable throwable) {
 				log.error("Writing MAC address failed with Exception: " + throwable, throwable);
-				closeConnection(executorService, operationQueue, connection);
+				closeConnection(deviceAsync, executorService, operationQueue, connection);
 			}
 
 			@Override
@@ -132,7 +140,7 @@ public class DeviceMacWriterCLI {
 			@Override
 			public void onCancel() {
 				log.info("Writing MAC address was canceled!");
-				closeConnection(executorService, operationQueue, connection);
+				closeConnection(deviceAsync, executorService, operationQueue, connection);
 			}
 		};
 
@@ -140,15 +148,33 @@ public class DeviceMacWriterCLI {
 
 	}
 
-	private static void closeConnection(final ExecutorService executorService, final OperationQueue operationQueue,
+	private static void closeConnection(final DeviceAsync deviceAsync, final ExecutorService executorService,
+										final OperationQueue operationQueue,
 										final Connection connection) {
-		try {
-			operationQueue.shutdown(false);
-		} catch (Exception e) {
-			log.error("Exception while shutting down operation queue: " + e, e);
-		}
-		Closeables.closeQuietly(connection);
-		ExecutorUtils.shutdown(executorService, 10, TimeUnit.SECONDS);
+
+		// must shutdown thread pool asynchronously
+		new Thread() {
+
+			@Override
+			public void run() {
+				log.debug("Shutting down operation queue...");
+				try {
+					operationQueue.shutdown(false);
+				} catch (Exception e) {
+					log.error("Exception while shutting down operation queue: " + e, e);
+				}
+
+				log.debug("Closing DeviceAsync...");
+				Closeables.closeQuietly(deviceAsync);
+
+				log.debug("Closing Connection...");
+				Closeables.closeQuietly(connection);
+
+				log.debug("Shutting down executor...");
+				ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
+			}
+
+		}.start();
 	}
 
 }

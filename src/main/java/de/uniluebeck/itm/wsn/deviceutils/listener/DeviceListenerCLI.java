@@ -35,8 +35,8 @@ import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
+import de.uniluebeck.itm.wsn.drivers.core.async.ExecutorServiceOperationQueue;
 import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.async.thread.PausableExecutorOperationQueue;
 import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
@@ -126,6 +126,10 @@ public class DeviceListenerCLI {
 			printUsageAndExit(options);
 		}
 
+		if (outWriter == null) {
+			throw new RuntimeException("This should not happen!");
+		}
+
 		final Writer finalOutWriter = outWriter;
 		Runtime.getRuntime().addShutdownHook(new Thread(DeviceListenerCLI.class.getName() + "-ShutdownThread") {
 			@Override
@@ -146,10 +150,10 @@ public class DeviceListenerCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		OperationQueue operationQueue = new PausableExecutorOperationQueue();
 		final ExecutorService executorService = Executors.newCachedThreadPool();
-		final DeviceAsync deviceAsync =
-				new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
+		OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService);
+		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl())
+				.create(executorService, deviceType, connection, operationQueue);
 
 		final InputStream inputStream = deviceAsync.getInputStream();
 		final OutputStream outputStream = deviceAsync.getOutputStream();
@@ -166,7 +170,7 @@ public class DeviceListenerCLI {
 				);
 				pipeline.addLast("frameDecoder", decoders.get(0).getSecond());
 
-				final List<Tuple<String,ChannelHandler>> encoders = new DleStxEtxFramingEncoderFactory().create(
+				final List<Tuple<String, ChannelHandler>> encoders = new DleStxEtxFramingEncoderFactory().create(
 						"frameEncoder",
 						HashMultimap.<String, String>create()
 				);
@@ -185,13 +189,14 @@ public class DeviceListenerCLI {
 				);
 				return pipeline;
 			}
-		});
+		}
+		);
 
 		// Make a new connection.
 		ChannelFuture connectFuture = bootstrap.connect(new IOStreamAddress(inputStream, outputStream));
 
 		// Wait until the connection is made successfully.
-		Channel channel = connectFuture.awaitUninterruptibly().getChannel();
+		connectFuture.awaitUninterruptibly().getChannel();
 
 	}
 
