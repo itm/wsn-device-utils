@@ -25,6 +25,8 @@ package de.uniluebeck.itm.wsn.deviceutils.flasher;
 
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+
 import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class DeviceFlasherCLI {
@@ -78,8 +81,8 @@ public class DeviceFlasherCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final ExecutorService executorService = Executors.newCachedThreadPool();
-		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService);
+		final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
+		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService, new SimpleTimeLimiter(executorService));
 		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
 
 		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
@@ -125,11 +128,6 @@ public class DeviceFlasherCLI {
 	}
 
 	private static void closeConnection(final ExecutorService executorService, final OperationQueue operationQueue, final Connection connection) {
-		try {
-			operationQueue.shutdown(false);
-		} catch (Exception e) {
-			log.error("Exception while shutting down operation queue: " + e, e);
-		}
 		Closeables.closeQuietly(connection);
 		ExecutorUtils.shutdown(executorService, 10, TimeUnit.SECONDS);
 	}
