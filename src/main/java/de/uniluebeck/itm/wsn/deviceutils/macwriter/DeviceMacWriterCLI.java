@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.wsn.deviceutils.macwriter;
 
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class DeviceMacWriterCLI {
@@ -91,11 +93,12 @@ public class DeviceMacWriterCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final ExecutorService executorService = Executors.newCachedThreadPool(
+		final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3,
 				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
 		);
 
-		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService);
+		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService, 
+				new SimpleTimeLimiter(executorService));
 
 		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(
 				executorService,
@@ -157,13 +160,6 @@ public class DeviceMacWriterCLI {
 
 			@Override
 			public void run() {
-				log.debug("Shutting down operation queue...");
-				try {
-					operationQueue.shutdown(false);
-				} catch (Exception e) {
-					log.error("Exception while shutting down operation queue: " + e, e);
-				}
-
 				log.debug("Closing DeviceAsync...");
 				Closeables.closeQuietly(deviceAsync);
 
