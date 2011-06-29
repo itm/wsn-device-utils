@@ -27,6 +27,7 @@ import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.tr.util.ExecutorUtils;
+import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
@@ -93,15 +94,19 @@ public class DeviceMacWriterCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3,
+		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
+				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriterScheduler-Thread %d").build()
+		);
+		final ExecutorService executorService = Executors.newCachedThreadPool(
 				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
 		);
+		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(scheduleService, 
+				executorService);
 
-		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService, 
-				new SimpleTimeLimiter(executorService));
+		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(delegate, new SimpleTimeLimiter(delegate));
 
 		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(
-				executorService,
+				delegate,
 				deviceType,
 				connection,
 				operationQueue
@@ -126,13 +131,13 @@ public class DeviceMacWriterCLI {
 				log.info("Writing MAC address {} of {} device at port {} done!",
 						new Object[]{macAddress, deviceType, port}
 				);
-				closeConnection(deviceAsync, executorService, operationQueue, connection);
+				closeConnection(deviceAsync, delegate, connection);
 			}
 
 			@Override
 			public void onFailure(Throwable throwable) {
 				log.error("Writing MAC address failed with Exception: " + throwable, throwable);
-				closeConnection(deviceAsync, executorService, operationQueue, connection);
+				closeConnection(deviceAsync, delegate, connection);
 			}
 
 			@Override
@@ -143,7 +148,7 @@ public class DeviceMacWriterCLI {
 			@Override
 			public void onCancel() {
 				log.info("Writing MAC address was canceled!");
-				closeConnection(deviceAsync, executorService, operationQueue, connection);
+				closeConnection(deviceAsync, delegate, connection);
 			}
 		};
 
@@ -152,25 +157,16 @@ public class DeviceMacWriterCLI {
 	}
 
 	private static void closeConnection(final DeviceAsync deviceAsync, final ExecutorService executorService,
-										final OperationQueue operationQueue,
 										final Connection connection) {
 
-		// must shutdown thread pool asynchronously
-		new Thread() {
+		log.debug("Closing DeviceAsync...");
+		Closeables.closeQuietly(deviceAsync);
 
-			@Override
-			public void run() {
-				log.debug("Closing DeviceAsync...");
-				Closeables.closeQuietly(deviceAsync);
+		log.debug("Closing Connection...");
+		Closeables.closeQuietly(connection);
 
-				log.debug("Closing Connection...");
-				Closeables.closeQuietly(connection);
-
-				log.debug("Shutting down executor...");
-				ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
-			}
-
-		}.start();
+		log.debug("Shutting down executor...");
+		ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
 	}
 
 }

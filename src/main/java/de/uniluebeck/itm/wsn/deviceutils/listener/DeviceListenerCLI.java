@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -55,9 +56,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoderFactory;
 import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingEncoderFactory;
+import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.Tuple;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
@@ -164,10 +167,17 @@ public class DeviceListenerCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
-		OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService, new SimpleTimeLimiter(executorService));
+		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
+				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
+		);
+		final ExecutorService executorService = Executors.newCachedThreadPool(
+				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
+		);
+		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(scheduleService, 
+				executorService);
+		OperationQueue operationQueue = new ExecutorServiceOperationQueue(delegate, new SimpleTimeLimiter(delegate));
 		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl())
-				.create(executorService, deviceType, connection, operationQueue);
+				.create(delegate, deviceType, connection, operationQueue);
 
 		final InputStream inputStream = deviceAsync.getInputStream();
 		final OutputStream outputStream = deviceAsync.getOutputStream();

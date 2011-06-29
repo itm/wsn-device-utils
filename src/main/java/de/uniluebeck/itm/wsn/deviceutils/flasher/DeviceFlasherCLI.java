@@ -26,8 +26,10 @@ package de.uniluebeck.itm.wsn.deviceutils.flasher;
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import de.uniluebeck.itm.tr.util.ExecutorUtils;
+import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
@@ -81,9 +83,16 @@ public class DeviceFlasherCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
-		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(executorService, new SimpleTimeLimiter(executorService));
-		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(executorService, deviceType, connection, operationQueue);
+		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
+				new ThreadFactoryBuilder().setNameFormat("DeviceFlasherScheduler-Thread %d").build()
+		);
+		final ExecutorService executorService = Executors.newCachedThreadPool(
+				new ThreadFactoryBuilder().setNameFormat("DeviceFlasher-Thread %d").build()
+		);
+		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(scheduleService, 
+				executorService);
+		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(delegate, new SimpleTimeLimiter(delegate));
+		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(delegate, deviceType, connection, operationQueue);
 
 		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
 			private int lastProgress = -1;
@@ -102,13 +111,13 @@ public class DeviceFlasherCLI {
 			public void onSuccess(Void result) {
 				log.info("Progress: {}%", 100);
 				log.info("Flashing node done!");
-				closeConnection(executorService, operationQueue, connection);
+				closeConnection(delegate, connection);
 			}
 
 			@Override
 			public void onFailure(Throwable throwable) {
 				log.error("Flashing node failed with Exception: " + throwable, throwable);
-				closeConnection(executorService, operationQueue, connection);
+				closeConnection(delegate, connection);
 			}
 
 			@Override
@@ -119,7 +128,7 @@ public class DeviceFlasherCLI {
 			@Override
 			public void onCancel() {
 				log.info("Flashing was canceled!");
-				closeConnection(executorService, operationQueue, connection);
+				closeConnection(delegate, connection);
 			}
 		};
 
@@ -127,7 +136,7 @@ public class DeviceFlasherCLI {
 
 	}
 
-	private static void closeConnection(final ExecutorService executorService, final OperationQueue operationQueue, final Connection connection) {
+	private static void closeConnection(final ExecutorService executorService, final Connection connection) {
 		Closeables.closeQuietly(connection);
 		ExecutorUtils.shutdown(executorService, 10, TimeUnit.SECONDS);
 	}
