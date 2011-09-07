@@ -93,15 +93,18 @@ public class DeviceMacReaderCLI {
 		);
 
 		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
-		final DeviceObserver deviceObserver = injector.getInstance(DeviceObserver.class);
 
-		final ImmutableList<DeviceEvent> events = deviceObserver.getEvents(false);
 		String reference = null;
+		if (args.length > 2) {
 
-		for (DeviceEvent event : events) {
-			final boolean samePort = port.equals(event.getDeviceInfo().getPort());
-			if (samePort) {
-				reference = event.getDeviceInfo().getReference();
+			final DeviceObserver deviceObserver = injector.getInstance(DeviceObserver.class);
+			final ImmutableList<DeviceEvent> events = deviceObserver.getEvents(false);
+
+			for (DeviceEvent event : events) {
+				final boolean samePort = port.equals(event.getDeviceInfo().getPort());
+				if (samePort) {
+					reference = event.getDeviceInfo().getReference();
+				}
 			}
 		}
 
