@@ -55,7 +55,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
-import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoderFactory;
@@ -67,12 +66,8 @@ import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
-import de.uniluebeck.itm.wsn.drivers.core.Connection;
-import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
-import de.uniluebeck.itm.wsn.drivers.core.async.ExecutorServiceOperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.core.Device;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 
 public class DeviceListenerCLI {
@@ -80,6 +75,8 @@ public class DeviceListenerCLI {
 	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
 	private final static org.slf4j.Logger log = LoggerFactory.getLogger(DeviceListenerCLI.class);
+	
+	private static final DeviceFactory factory = new DeviceFactoryImpl();
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 
@@ -160,13 +157,6 @@ public class DeviceListenerCLI {
 		}
 		);
 
-		final Connection connection = new ConnectionFactoryImpl().create(deviceType);
-		connection.connect(port);
-
-		if (!connection.isConnected()) {
-			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
-		}
-
 		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
 				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
 		);
@@ -175,9 +165,12 @@ public class DeviceListenerCLI {
 		);
 		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(scheduleService, 
 				executorService);
-		OperationQueue operationQueue = new ExecutorServiceOperationQueue(delegate, new SimpleTimeLimiter(delegate));
-		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl())
-				.create(delegate, deviceType, connection, operationQueue);
+		final Device deviceAsync = factory.create(delegate, deviceType);
+		
+		deviceAsync.connect(port);
+		if (!deviceAsync.isConnected()) {
+			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
+		}
 
 		final InputStream inputStream = deviceAsync.getInputStream();
 		final OutputStream outputStream = deviceAsync.getOutputStream();

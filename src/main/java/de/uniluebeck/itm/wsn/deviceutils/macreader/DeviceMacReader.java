@@ -23,7 +23,8 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
-import com.google.inject.internal.Nullable;
+import javax.annotation.Nullable;
+
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 
 public interface DeviceMacReader {

@@ -34,18 +34,15 @@ public class DeviceEvent {
 
 	private final DeviceInfo deviceInfo;
 
-	@SuppressWarnings("unused")
 	public DeviceEvent(final Type type, final DeviceInfo deviceInfo) {
 		this.type = type;
 		this.deviceInfo = deviceInfo;
 	}
 
-	@SuppressWarnings("unused")
 	public DeviceInfo getDeviceInfo() {
 		return deviceInfo;
 	}
 
-	@SuppressWarnings("unused")
 	public Type getType() {
 		return type;
 	}

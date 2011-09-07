@@ -29,4 +29,9 @@ import java.util.HashMap;
 
 public class DeviceMacReferenceMap extends HashMap<String, MacAddress> {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -464587395134301875L;
+
 }

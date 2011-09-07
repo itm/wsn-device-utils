@@ -23,31 +23,28 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.flasher;
 
-import com.google.common.io.Closeables;
-import com.google.common.io.Files;
-import com.google.common.util.concurrent.SimpleTimeLimiter;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import de.uniluebeck.itm.tr.util.ExecutorUtils;
-import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
-import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.wsn.drivers.core.Connection;
-import de.uniluebeck.itm.wsn.drivers.core.async.AsyncCallback;
-import de.uniluebeck.itm.wsn.drivers.core.async.DeviceAsync;
-import de.uniluebeck.itm.wsn.drivers.core.async.ExecutorServiceOperationQueue;
-import de.uniluebeck.itm.wsn.drivers.core.async.OperationQueue;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceAsyncFactoryImpl;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import com.google.common.io.Closeables;
+import com.google.common.io.Files;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
+import de.uniluebeck.itm.tr.util.ExecutorUtils;
+import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
+import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
+import de.uniluebeck.itm.wsn.drivers.core.Connection;
+import de.uniluebeck.itm.wsn.drivers.core.Device;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 
 public class DeviceFlasherCLI {
 
@@ -75,26 +72,20 @@ public class DeviceFlasherCLI {
 
 		final String deviceType = args[0];
 		final String port = args[1];
+		
+		final Injector injector = Guice.createInjector(
+				new DeviceUtilsModule(), 
+				new ScheduledExecutorServiceModule("DeviceFlasher")
+		);
+		final ScheduledExecutorService delegate = injector.getInstance(ScheduledExecutorService.class);
+		final Device device = injector.getInstance(DeviceFactory.class).create(delegate, deviceType);
 
-		final Connection connection = new ConnectionFactoryImpl().create(deviceType);
-		connection.connect(port);
-
-		if (!connection.isConnected()) {
+		device.connect(port);
+		if (!device.isConnected()) {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
-
-		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
-				new ThreadFactoryBuilder().setNameFormat("DeviceFlasherScheduler-Thread %d").build()
-		);
-		final ExecutorService executorService = Executors.newCachedThreadPool(
-				new ThreadFactoryBuilder().setNameFormat("DeviceFlasher-Thread %d").build()
-		);
-		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(scheduleService, 
-				executorService);
-		final OperationQueue operationQueue = new ExecutorServiceOperationQueue(delegate, new SimpleTimeLimiter(delegate));
-		final DeviceAsync deviceAsync = new DeviceAsyncFactoryImpl(new DeviceFactoryImpl()).create(delegate, deviceType, connection, operationQueue);
-
-		AsyncCallback<Void> callback = new AsyncCallback<Void>() {
+		
+		OperationCallback<Void> callback = new OperationCallback<Void>() {
 			private int lastProgress = -1;
 
 			@Override
@@ -104,20 +95,16 @@ public class DeviceFlasherCLI {
 					lastProgress = newProgress;
 					log.info("Progress: {}%", newProgress);
 				}
-
 			}
 
 			@Override
 			public void onSuccess(Void result) {
-				log.info("Progress: {}%", 100);
 				log.info("Flashing node done!");
-				closeConnection(delegate, connection);
 			}
 
 			@Override
 			public void onFailure(Throwable throwable) {
 				log.error("Flashing node failed with Exception: " + throwable, throwable);
-				closeConnection(delegate, connection);
 			}
 
 			@Override
@@ -128,12 +115,14 @@ public class DeviceFlasherCLI {
 			@Override
 			public void onCancel() {
 				log.info("Flashing was canceled!");
-				closeConnection(delegate, connection);
 			}
 		};
 
-		deviceAsync.program(Files.toByteArray(new File(args[2])), 120000, callback);
-
+		try {
+			device.program(Files.toByteArray(new File(args[2])), 120000, callback).get();
+		} finally {
+			closeConnection(delegate, device);
+		}
 	}
 
 	private static void closeConnection(final ExecutorService executorService, final Connection connection) {

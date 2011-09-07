@@ -23,32 +23,36 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
-import com.google.common.io.Closeables;
-import com.google.inject.Inject;
-import com.google.inject.internal.Nullable;
-import com.google.inject.name.Named;
-import de.uniluebeck.itm.wsn.drivers.core.Connection;
-import de.uniluebeck.itm.wsn.drivers.core.Device;
-import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
-import de.uniluebeck.itm.wsn.drivers.core.Monitor;
-import de.uniluebeck.itm.wsn.drivers.core.exception.PortNotFoundException;
-import de.uniluebeck.itm.wsn.drivers.core.operation.ReadMacAddressOperation;
-import de.uniluebeck.itm.wsn.drivers.core.operation.RootProgressManager;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
+import java.util.concurrent.ScheduledExecutorService;
+
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.io.Closeables;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+
+import de.uniluebeck.itm.wsn.drivers.core.Device;
+import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
+import de.uniluebeck.itm.wsn.drivers.core.exception.PortNotFoundException;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallbackAdapter;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
 
 public class DeviceMacReaderImpl implements DeviceMacReader {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceMacReaderImpl.class);
-
-	@Inject
-	private ConnectionFactory connectionFactory;
+	
+	private static final int TIMEOUT = 300000;
 
 	@Inject
 	private DeviceFactory deviceFactory;
+	
+	@Inject
+	private ScheduledExecutorService executorService;
 
 	@Inject
 	@Nullable
@@ -91,60 +95,45 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 	}
 
 	private MacAddress readMacFromDevice(final String port, final DeviceType deviceType) throws Exception {
-
-		final Connection connection = tryToConnect(deviceType, port);
-
-		if (connection == null || !connection.isConnected()) {
-			throw new Exception("Connection to device at port \"" + port + "\" could not be established!");
-		}
-
+		final Device device = deviceFactory.create(executorService, deviceType);
 		try {
-
-			final Device device = deviceFactory.create(deviceType, connection);
-			final ReadMacAddressOperation readMacAddressOperation = device.createReadMacAddressOperation();
-
-			MacAddress macAddress = readMacAddressOperation.execute(new RootProgressManager(new Monitor() {
-
+			tryToConnect(device, port);
+			final OperationCallback<MacAddress> callback = new OperationCallbackAdapter<MacAddress>() {
 				private int lastProgress = -1;
-
+				
 				@Override
-				public void onProgressChange(final float fraction) {
+				public void onProgressChange(float fraction) {
 					int newProgress = (int) Math.floor(fraction * 100);
 					if (lastProgress < newProgress) {
 						lastProgress = newProgress;
 						log.debug("Progress: {}%", newProgress);
 					}
 				}
-			}
-			)
-			);
+			};
+			final MacAddress macAddress = device.readMac(TIMEOUT, callback).get();
 
 			if (use16BitMode) {
-				macAddress = macAddress.to16BitMacAddress();
+				return macAddress.to16BitMacAddress();
 			}
-
 			return macAddress;
 
 		} finally {
-			Closeables.closeQuietly(connection);
+			Closeables.closeQuietly(device);
 		}
 	}
 
-	private Connection tryToConnect(final DeviceType deviceType, final String port) throws Exception {
-
-		final Connection connection = connectionFactory.create(deviceType);
-
+	private void tryToConnect(final Device device, final String port) throws Exception {
 		for (int i = 0; i < 10; i++) {
 			try {
-				connection.connect(port);
-				return connection;
+				device.connect(port);
 			} catch (PortNotFoundException e) {
 				Thread.sleep(100);
 			} catch (Exception e) {
-				return null;
 			}
 		}
-
-		return null;
+		
+		if (!device.isConnected()) {
+			throw new Exception("Connection to device at port \"" + port + "\" could not be established!");
+		}
 	}
 }

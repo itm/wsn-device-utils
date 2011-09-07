@@ -76,13 +76,11 @@ public class DeviceObserverCLI {
 			public void deviceEvent(final DeviceEvent event) {
 				log.info("{}", event);
 			}
-		}
-		);
+		});
 
 		final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DeviceObserver %d").build();
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, threadFactory);
 		scheduler.scheduleAtFixedRate(deviceObserver, 0, 1, TimeUnit.SECONDS);
-
 	}
 
 	private static DeviceMacReferenceMap readDeviceMacReferenceMap(final String fileName) throws IOException {

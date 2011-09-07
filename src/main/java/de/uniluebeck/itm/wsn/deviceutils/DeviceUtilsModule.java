@@ -23,39 +23,38 @@
 
 package de.uniluebeck.itm.wsn.deviceutils;
 
+import javax.annotation.Nullable;
+
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.internal.Nullable;
+
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderModule;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
-import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.ConnectionFactoryImpl;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 
 public class DeviceUtilsModule implements Module {
 
-	private DeviceMacReferenceMap deviceMacReferenceMap;
+	private final DeviceMacReferenceMap deviceMacReferenceMap;
 
 	private final boolean use16BitMode;
+	
+	public DeviceUtilsModule() {
+		this(null, true);
+	}
 
-	public DeviceUtilsModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap) {
+	public DeviceUtilsModule(@Nullable DeviceMacReferenceMap deviceMacReferenceMap) {
 		this(deviceMacReferenceMap, true);
 	}
 
-	public DeviceUtilsModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap, final boolean use16BitMode) {
+	public DeviceUtilsModule(@Nullable DeviceMacReferenceMap deviceMacReferenceMap, boolean use16BitMode) {
 		this.deviceMacReferenceMap = deviceMacReferenceMap;
 		this.use16BitMode = use16BitMode;
 	}
 
 	@Override
 	public void configure(final Binder binder) {
-
 		binder.install(new DeviceMacReaderModule(deviceMacReferenceMap, use16BitMode));
-
-		binder.bind(ConnectionFactory.class).to(ConnectionFactoryImpl.class);
 		binder.bind(DeviceFactory.class).to(DeviceFactoryImpl.class);
 	}
-
 }
