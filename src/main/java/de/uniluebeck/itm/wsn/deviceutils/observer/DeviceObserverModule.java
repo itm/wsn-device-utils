@@ -25,8 +25,6 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReader;
-import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderImpl;
 
 public class DeviceObserverModule implements Module {
 

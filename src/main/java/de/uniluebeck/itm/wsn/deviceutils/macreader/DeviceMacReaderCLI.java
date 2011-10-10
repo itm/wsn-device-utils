@@ -23,22 +23,24 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
-import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
-import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
-import de.uniluebeck.itm.wsn.drivers.factories.FactoriesModule;
-import org.apache.log4j.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+
+import org.apache.log4j.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
+import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
+import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
+import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
+import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 
 public class DeviceMacReaderCLI {
 
@@ -86,8 +88,8 @@ public class DeviceMacReaderCLI {
 		}
 
 		final Injector injector = Guice.createInjector(
-				new FactoriesModule(),
-				new DeviceMacReaderModule(deviceMacReferenceMap)
+				new DeviceMacReaderModule(deviceMacReferenceMap),
+				new ScheduledExecutorServiceModule("DeviceMacReader")
 		);
 
 		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);

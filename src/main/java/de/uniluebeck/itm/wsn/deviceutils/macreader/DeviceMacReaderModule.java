@@ -27,6 +27,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.google.inject.util.Providers;
+
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
 
 public class DeviceMacReaderModule implements Module {
@@ -46,7 +47,6 @@ public class DeviceMacReaderModule implements Module {
 
 	@Override
 	public void configure(final Binder binder) {
-
 		binder.install(new DeviceObserverModule());
 
 		if (deviceMacReferenceMap == null) {
