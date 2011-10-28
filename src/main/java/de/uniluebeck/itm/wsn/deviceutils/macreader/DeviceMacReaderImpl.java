@@ -91,6 +91,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 			throw new Exception("No MAC address for reference \"" + reference + "\" found in map!");
 		}
 
+		assert referenceToMacMap != null;
 		return referenceToMacMap.get(reference);
 	}
 

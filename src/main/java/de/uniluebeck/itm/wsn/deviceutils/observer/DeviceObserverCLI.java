@@ -23,19 +23,24 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
+import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
+import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
+import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
+import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
+import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
+import org.apache.commons.cli.*;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,6 +48,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 public class DeviceObserverCLI {
+
+	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceObserverCLI.class);
 
@@ -56,25 +63,48 @@ public class DeviceObserverCLI {
 
 		Logging.setLoggingDefaults();
 
-		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm.wsn.drivers").setLevel(Level.ERROR);
-		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm").setLevel(Level.INFO);
-		org.apache.log4j.Logger.getLogger("eu.wisebed").setLevel(Level.INFO);
-		org.apache.log4j.Logger.getLogger("com.coalesenses").setLevel(Level.INFO);
+		CommandLineParser parser = new PosixParser();
+		Options options = createCommandLineOptions();
 
 		DeviceMacReferenceMap deviceMacReferenceMap = null;
 
-		if (args.length > 0) {
-			deviceMacReferenceMap = readDeviceMacReferenceMap(args[0]);
+		try {
+
+			CommandLine line = parser.parse(options, args, true);
+
+			if (line.hasOption('h')) {
+				printUsageAndExit(options);
+			}
+
+			if (line.hasOption('v')) {
+				org.apache.log4j.Logger.getRootLogger().setLevel(Level.DEBUG);
+			}
+
+			if (line.hasOption('l')) {
+				Level level = Level.toLevel(line.getOptionValue('l'));
+				org.apache.log4j.Logger.getRootLogger().setLevel(level);
+			}
+
+			if (line.hasOption('r')) {
+				deviceMacReferenceMap = readDeviceMacReferenceMap(line.getOptionValue('m'));
+			}
+
+		} catch (Exception e) {
+			log.error("Invalid command line: " + e);
+			printUsageAndExit(options);
 		}
 
 		final DeviceObserver deviceObserver = Guice
-				.createInjector(new DeviceUtilsModule(deviceMacReferenceMap))
+				.createInjector(
+						new DeviceUtilsModule(deviceMacReferenceMap),
+						new ScheduledExecutorServiceModule(DeviceObserver.class.getSimpleName())
+				)
 				.getInstance(DeviceObserver.class);
 
 		deviceObserver.addListener(new DeviceObserverListener() {
 			@Override
 			public void deviceEvent(final DeviceEvent event) {
-				log.info("{}", event);
+				System.out.println(event);
 			}
 		});
 
@@ -110,6 +140,29 @@ public class DeviceObserverCLI {
 		}
 
 		return deviceMacReferenceMap;
+	}
+
+	private static Options createCommandLineOptions() {
+
+		Options options = new Options();
+
+		// add all available options
+		options.addOption("r", "referencetomacmap", true,
+				"Optional: a properties file containing device references to MAC address mappings"
+		);
+		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
+		options.addOption("l", "logging", true,
+				"Optional: Set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+		);
+		options.addOption("h", "help", false, "Help output");
+
+		return options;
+	}
+
+	private static void printUsageAndExit(Options options) {
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.printHelp(120, DeviceObserverCLI.class.getCanonicalName(), null, options, null);
+		System.exit(1);
 	}
 
 }

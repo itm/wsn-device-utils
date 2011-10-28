@@ -23,26 +23,32 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
-
-import org.apache.log4j.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
+import org.apache.commons.cli.*;
+import org.apache.log4j.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Properties;
+
+import static com.google.common.collect.Maps.newHashMap;
 
 public class DeviceMacReaderCLI {
+
+	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceMacReaderCLI.class);
 
@@ -56,35 +62,53 @@ public class DeviceMacReaderCLI {
 
 	public static void main(String[] args) throws Exception {
 
-		Logging.setLoggingDefaults();
+		Logging.setLoggingDefaults(Level.WARN);
 
-		org.apache.log4j.Logger itmLogger = org.apache.log4j.Logger.getLogger("de.uniluebeck.itm");
-		org.apache.log4j.Logger wisebedLogger = org.apache.log4j.Logger.getLogger("eu.wisebed");
-		org.apache.log4j.Logger coaLogger = org.apache.log4j.Logger.getLogger("com.coalesenses");
+		CommandLineParser parser = new PosixParser();
+		Options options = createCommandLineOptions();
 
-		itmLogger.setLevel(Level.WARN);
-		wisebedLogger.setLevel(Level.WARN);
-		coaLogger.setLevel(Level.WARN);
-
-		if (args.length < 2) {
-			System.out.println(
-					"Usage: " + DeviceMacReaderCLI.class
-							.getSimpleName() + " SENSOR_TYPE SERIAL_PORT [REFERENCE_PROPERTIES_FILE]"
-			);
-			System.out.println(
-					"Example: " + DeviceMacReaderCLI.class
-							.getSimpleName() + " isense /dev/ttyUSB0 references.properties"
-			);
-			System.exit(EXIT_CODE_INVALID_ARGUMENTS);
-		}
-
-		final String deviceType = args[0];
-		final String port = args[1];
-
+		String deviceType = null;
+		String port = null;
+		Map<String, String> configuration = newHashMap();
 		DeviceMacReferenceMap deviceMacReferenceMap = null;
 
-		if (args.length > 2) {
-			deviceMacReferenceMap = readDeviceMacReferenceMap(args[2]);
+		try {
+
+			CommandLine line = parser.parse(options, args, true);
+
+			if (line.hasOption('h')) {
+				printUsageAndExit(options);
+			}
+
+			if (line.hasOption('v')) {
+				org.apache.log4j.Logger.getRootLogger().setLevel(Level.DEBUG);
+			}
+
+			if (line.hasOption('l')) {
+				Level level = Level.toLevel(line.getOptionValue('l'));
+				org.apache.log4j.Logger.getRootLogger().setLevel(level);
+			}
+
+			if (line.hasOption('c')) {
+				final String configurationFileString = line.getOptionValue('c');
+				final File configurationFile = new File(configurationFileString);
+				final Properties configurationProperties = new Properties();
+				configurationProperties.load(new FileReader(configurationFile));
+				for (Map.Entry<Object, Object> entry : configurationProperties.entrySet()) {
+					configuration.put((String) entry.getKey(), (String) entry.getValue());
+				}
+			}
+
+			if (line.hasOption('r')) {
+				deviceMacReferenceMap = readDeviceMacReferenceMap(line.getOptionValue('m'));
+			}
+
+			deviceType = line.getOptionValue('t');
+			port = line.getOptionValue('p');
+
+		} catch (Exception e) {
+			log.error("Invalid command line: " + e);
+			printUsageAndExit(options);
 		}
 
 		final Injector injector = Guice.createInjector(
@@ -95,7 +119,7 @@ public class DeviceMacReaderCLI {
 		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
 
 		String reference = null;
-		if (args.length > 2) {
+		if (deviceMacReferenceMap != null) {
 
 			final DeviceObserver deviceObserver = injector.getInstance(DeviceObserver.class);
 			final ImmutableList<DeviceEvent> events = deviceObserver.getEvents(false);
@@ -113,6 +137,7 @@ public class DeviceMacReaderCLI {
 			final MacAddress macAddress = deviceMacReader.readMac(port, deviceType, reference);
 			log.info("Read MAC address of {} device at port {}: {}", new Object[]{deviceType, port, macAddress});
 			System.out.println(macAddress.toHexString());
+			System.exit(0);
 
 		} catch (Exception e) {
 			log.error("Reading MAC address failed with Exception: " + e, e);
@@ -148,6 +173,37 @@ public class DeviceMacReaderCLI {
 		}
 
 		return deviceMacReferenceMap;
+	}
+
+	private static Options createCommandLineOptions() {
+
+		Options options = new Options();
+
+		options.addOption("p", "port", true, "Serial port of the device");
+		options.getOption("p").setRequired(true);
+		options.addOption("t", "type", true, "The type of the device");
+		options.getOption("t").setRequired(true);
+
+		options.addOption("r", "referencetomacmap", true,
+				"Optional: a properties file containing device references to MAC address mappings"
+		);
+		options.addOption("c", "configuration", true,
+				"File name of a configuration file containing key value pairs to configure the device"
+		);
+		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
+		options.addOption("l", "logging", true,
+				"Optional: Set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+		);
+		options.addOption("h", "help", false, "Help output");
+
+
+		return options;
+	}
+
+	private static void printUsageAndExit(Options options) {
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.printHelp(120, DeviceMacReaderCLI.class.getCanonicalName(), null, options, null);
+		System.exit(1);
 	}
 
 }

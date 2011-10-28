@@ -30,17 +30,19 @@ import com.google.inject.util.Providers;
 
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
 
+import javax.annotation.Nullable;
+
 public class DeviceMacReaderModule implements Module {
 
 	private final DeviceMacReferenceMap deviceMacReferenceMap;
 
 	private final boolean use16BitMode;
 
-	public DeviceMacReaderModule(final DeviceMacReferenceMap deviceMacReferenceMap) {
+	public DeviceMacReaderModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap) {
 		this(deviceMacReferenceMap, true);
 	}
 
-	public DeviceMacReaderModule(final DeviceMacReferenceMap deviceMacReferenceMap, final boolean use16BitMode) {
+	public DeviceMacReaderModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap, final boolean use16BitMode) {
 		this.deviceMacReferenceMap = deviceMacReferenceMap;
 		this.use16BitMode = use16BitMode;
 	}

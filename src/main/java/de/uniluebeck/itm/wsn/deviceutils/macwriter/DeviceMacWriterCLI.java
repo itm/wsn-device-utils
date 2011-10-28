@@ -23,10 +23,16 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.macwriter;
 
+import java.io.File;
+import java.io.FileReader;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Joiner;
+import org.apache.commons.cli.*;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,30 +51,63 @@ import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 
+import static com.google.common.collect.Maps.newHashMap;
+
 public class DeviceMacWriterCLI {
+
+	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceMacWriterCLI.class);
 
 	public static void main(String[] args) throws Exception {
 
-		Logging.setLoggingDefaults();
+		Logging.setLoggingDefaults(Level.WARN);
 
-		org.apache.log4j.Logger.getLogger("com.coalesenses").setLevel(Level.INFO);
-		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm").setLevel(Level.DEBUG);
-		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm.wsn.deviceutils").setLevel(Level.INFO);
-		org.apache.log4j.Logger.getLogger("de.uniluebeck.itm.wsn.drivers").setLevel(Level.INFO);
+		CommandLineParser parser = new PosixParser();
+		Options options = createCommandLineOptions();
 
-		if (args.length < 3) {
-			System.out.println(
-					"Usage: " + DeviceMacWriterCLI.class.getSimpleName() + " SENSOR_TYPE SERIAL_PORT MAC_ADRESS"
-			);
-			System.out.println(
-					"Example: " + DeviceMacWriterCLI.class.getSimpleName() + " isense /dev/ttyUSB0 0x1234"
-			);
-			System.exit(1);
+		String deviceType = null;
+		String port = null;
+		String macAddressLower16String = null;
+		Map<String,String> configuration = newHashMap();
+
+		try {
+
+			CommandLine line = parser.parse(options, args, true);
+
+			if (line.hasOption('h')) {
+				printUsageAndExit(options);
+			}
+
+			if (line.hasOption('v')) {
+				org.apache.log4j.Logger.getRootLogger().setLevel(Level.DEBUG);
+			}
+
+			if (line.hasOption('l')) {
+				Level level = Level.toLevel(line.getOptionValue('l'));
+				org.apache.log4j.Logger.getRootLogger().setLevel(level);
+			}
+
+			if (line.hasOption('c')) {
+				final String configurationFileString = line.getOptionValue('c');
+				final File configurationFile = new File(configurationFileString);
+				final Properties configurationProperties = new Properties();
+				configurationProperties.load(new FileReader(configurationFile));
+				for (Map.Entry<Object, Object> entry : configurationProperties.entrySet()) {
+					configuration.put((String) entry.getKey(), (String) entry.getValue());
+				}
+			}
+
+			deviceType = line.getOptionValue('t');
+			port = line.getOptionValue('p');
+			macAddressLower16String = line.getOptionValue('m');
+
+		} catch (Exception e) {
+			log.error("Invalid command line: " + e);
+			printUsageAndExit(options);
 		}
 
-		long macAddressLower16 = StringUtils.parseHexOrDecLong(args[2]);
+		long macAddressLower16 = StringUtils.parseHexOrDecLong(macAddressLower16String);
 		final MacAddress macAddress = new MacAddress(new byte[]{
 				0,
 				0,
@@ -81,20 +120,21 @@ public class DeviceMacWriterCLI {
 		}
 		);
 
-		final String deviceType = args[0];
-		final String port = args[1];
-		
 		final Injector injector = Guice.createInjector(
 				new DeviceUtilsModule(), 
 				new ScheduledExecutorServiceModule("DeviceMacWriter")
 		);
-		final ScheduledExecutorService delegate = injector.getInstance(ScheduledExecutorService.class);
-		final Device device = injector.getInstance(DeviceFactory.class).create(delegate, deviceType);
+
+		final ScheduledExecutorService executorService = injector.getInstance(ScheduledExecutorService.class);
+		final Device device = injector.getInstance(DeviceFactory.class).create(executorService, deviceType, configuration);
 		
 		device.connect(port);
 		if (!device.isConnected()) {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
+
+		final String finalDeviceType = deviceType;
+		final String finalPort = port;
 
 		OperationCallback<Void> callback = new OperationCallback<Void>() {
 			private int lastProgress = -1;
@@ -111,7 +151,7 @@ public class DeviceMacWriterCLI {
 			@Override
 			public void onSuccess(Void result) {
 				log.info("Writing MAC address {} of {} device at port {} done!",
-						new Object[] {macAddress, deviceType, port}
+						new Object[] {macAddress, finalDeviceType, finalPort}
 				);
 			}
 
@@ -134,7 +174,7 @@ public class DeviceMacWriterCLI {
 		try{
 			device.writeMac(macAddress, 120000, callback).get();
 		} finally {
-			closeConnection(device, delegate);
+			closeConnection(device, executorService);
 		}
 	}
 
@@ -144,6 +184,36 @@ public class DeviceMacWriterCLI {
 
 		log.debug("Shutting down executor...");
 		ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
+	}
+
+	private static Options createCommandLineOptions() {
+
+		Options options = new Options();
+
+		// add all available options
+		options.addOption("p", "port", true, "Serial port of the device");
+		options.addOption("t", "type", true, "The type of the device");
+		options.addOption("m", "mac", true, "MAC address to write to the device");
+		options.addOption("c", "configuration", true,
+				"File name of a configuration file containing key value pairs to configure the device"
+		);
+		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
+		options.addOption("l", "logging", true,
+				"Optional: Set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+		);
+		options.addOption("h", "help", false, "Help output");
+
+		options.getOption("p").setRequired(true);
+		options.getOption("t").setRequired(true);
+		options.getOption("m").setRequired(true);
+
+		return options;
+	}
+
+	private static void printUsageAndExit(Options options) {
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.printHelp(120, DeviceMacWriterCLI.class.getCanonicalName(), null, options, null);
+		System.exit(1);
 	}
 
 }

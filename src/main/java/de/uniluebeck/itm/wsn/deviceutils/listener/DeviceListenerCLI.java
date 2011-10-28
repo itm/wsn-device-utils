@@ -23,15 +23,16 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.listener;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.io.Files;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -70,6 +71,8 @@ import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 
+import static com.google.common.collect.Maps.newHashMap;
+
 public class DeviceListenerCLI {
 
 	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
@@ -80,20 +83,21 @@ public class DeviceListenerCLI {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 
-		Logging.setLoggingDefaults();
+		Logging.setLoggingDefaults(Level.WARN);
 
 		CommandLineParser parser = new PosixParser();
 		Options options = createCommandLineOptions();
 
 		String deviceType = null;
 		String port = null;
+		Map<String,String> configuration = newHashMap();
 
 		OutputStream outStream = System.out;
 		Writer outWriter = null;
 
 		try {
 
-			CommandLine line = parser.parse(options, args);
+			CommandLine line = parser.parse(options, args, true);
 
 			if (line.hasOption('h')) {
 				printUsageAndExit(options);
@@ -106,6 +110,16 @@ public class DeviceListenerCLI {
 			if (line.hasOption('l')) {
 				Level level = Level.toLevel(line.getOptionValue('l'));
 				Logger.getRootLogger().setLevel(level);
+			}
+
+			if (line.hasOption('c')) {
+				final String configurationFileString = line.getOptionValue('c');
+				final File configurationFile = new File(configurationFileString);
+				final Properties configurationProperties = new Properties();
+				configurationProperties.load(new FileReader(configurationFile));
+				for (Map.Entry<Object, Object> entry : configurationProperties.entrySet()) {
+					configuration.put((String) entry.getKey(), (String) entry.getValue());
+				}
 			}
 
 			deviceType = line.getOptionValue('t');
@@ -160,12 +174,17 @@ public class DeviceListenerCLI {
 		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
 				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
 		);
+
 		final ExecutorService executorService = Executors.newCachedThreadPool(
 				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
 		);
-		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(scheduleService, 
-				executorService);
-		final Device deviceAsync = factory.create(delegate, deviceType);
+
+		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(
+				scheduleService,
+				executorService
+		);
+
+		final Device deviceAsync = factory.create(delegate, deviceType, configuration);
 		
 		deviceAsync.connect(port);
 		if (!deviceAsync.isConnected()) {
@@ -226,6 +245,9 @@ public class DeviceListenerCLI {
 		options.getOption("p").setRequired(true);
 		options.addOption("t", "type", true, "Device type");
 		options.getOption("t").setRequired(true);
+		options.addOption("c", "configuration", true,
+				"File name of a configuration file containing key value pairs to configure the device"
+		);
 
 		options.addOption("f", "format", true, "Optional: Output format, options: csv, wiseml");
 		options.addOption("o", "outfile", true, "Optional: Redirect output to file");
