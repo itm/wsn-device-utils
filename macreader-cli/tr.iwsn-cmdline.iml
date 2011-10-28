@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_6" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/target/classes" />
+    <output-test url="file://$MODULE_DIR$/target/test-classes" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.overlay:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.itmutils:itmutils:0.3.2" level="project" />
+    <orderEntry type="library" name="Maven: com.google.guava:guava:10.0" level="project" />
+    <orderEntry type="library" name="Maven: com.google.code.findbugs:jsr305:1.3.9" level="project" />
+    <orderEntry type="library" name="Maven: com.google.classpath-explorer:classpath-explorer:1.0" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.5.8" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-log4j12:1.5.8" level="project" />
+    <orderEntry type="library" name="Maven: log4j:log4j:1.2.14" level="project" />
+    <orderEntry type="library" name="Maven: com.google.inject:guice:3.0" level="project" />
+    <orderEntry type="library" name="Maven: javax.inject:javax.inject:1" level="project" />
+    <orderEntry type="library" name="Maven: aopalliance:aopalliance:1.0" level="project" />
+    <orderEntry type="library" name="Maven: com.google.inject.extensions:guice-multibindings:3.0" level="project" />
+    <orderEntry type="library" name="Maven: com.google.protobuf:protobuf-java:2.3.0" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.iwsn-deviceapp:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.wsn-api:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.node-api:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-factories:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-core:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: org.rxtx:rxtx:2.1.7" level="project" />
+    <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.5" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-jennic:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-isense:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-telosb:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-pacemate:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-mock:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:wsn-device-drivers-nulldevice:0.3.7" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.wsn-device-utils:wsn-device-utils:0.3.2" level="project" />
+    <orderEntry type="library" name="Maven: org.jboss.netty:netty:3.2.3.Final" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty-iostream:netty-iostream:0.3" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:dlestxetx:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:factory:1.2" level="project" />
+    <orderEntry type="library" name="Maven: commons-configuration:commons-configuration:1.6" level="project" />
+    <orderEntry type="library" name="Maven: commons-collections:commons-collections:3.2.1" level="project" />
+    <orderEntry type="library" name="Maven: commons-logging:commons-logging:1.1.1" level="project" />
+    <orderEntry type="library" name="Maven: commons-digester:commons-digester:1.8" level="project" />
+    <orderEntry type="library" name="Maven: commons-beanutils:commons-beanutils:1.7.0" level="project" />
+    <orderEntry type="library" name="Maven: commons-beanutils:commons-beanutils-core:1.8.0" level="project" />
+    <orderEntry type="library" name="Maven: commons-cli:commons-cli:1.2" level="project" />
+    <orderEntry type="library" name="Maven: joda-time:joda-time:1.6" level="project" />
+    <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.4" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:protocol-collection:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:isense:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:util:1.2" level="project" />
+    <orderEntry type="library" name="Maven: org.simpleframework:simple-xml:2.5.3" level="project" />
+    <orderEntry type="library" name="Maven: stax:stax-api:1.0.1" level="project" />
+    <orderEntry type="library" name="Maven: stax:stax:1.2.0" level="project" />
+    <orderEntry type="library" name="Maven: xpp3:xpp3:1.1.3.3" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:iseraerial:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:discard:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:isense-otap:1.2" level="project" />
+    <orderEntry type="library" name="Maven: com.coalesenses:ieee-802.15.4-aes:0.2" level="project" />
+    <orderEntry type="library" name="Maven: org.bouncycastle:bcprov-ext-jdk16:1.45" level="project" />
+    <orderEntry type="library" name="Maven: com.coalesenses:isense-binary-image:0.3" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:isense-ishell-interpreter:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:logging-handler:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:netty-included:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:netty-handlerstack:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm.netty.handlerstack:wisebed:1.2" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.iwsn-service:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.rs-api:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.wiseml:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: jtidy:jtidy:4aug2000r7-dev" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.overlay-socketconnector:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: de.uniluebeck.itm:tr.overlay-stats:0.7.3-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: org.jgrapht:jgrapht-jdk1.6:0.8.1" level="project" />
+  </component>
+</module>
+

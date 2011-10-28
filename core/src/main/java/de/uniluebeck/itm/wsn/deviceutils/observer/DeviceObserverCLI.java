@@ -21,38 +21,37 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                *
  **********************************************************************************************************************/
 
-package de.uniluebeck.itm.wsn.deviceutils.macreader;
+package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
 import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
-import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
-import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
+import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
+import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
+import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
+import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
-import static com.google.common.collect.Maps.newHashMap;
-
-public class DeviceMacReaderCLI {
+public class DeviceObserverCLI {
 
 	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
-	private static final Logger log = LoggerFactory.getLogger(DeviceMacReaderCLI.class);
-
-	private static final int EXIT_CODE_INVALID_ARGUMENTS = 1;
+	private static final Logger log = LoggerFactory.getLogger(DeviceObserverCLI.class);
 
 	private static final int EXIT_CODE_REFERENCE_FILE_NOT_EXISTING = 2;
 
@@ -60,16 +59,13 @@ public class DeviceMacReaderCLI {
 
 	private static final int EXIT_CODE_REFERENCE_FILE_IS_DIRECTORY = 4;
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws IOException {
 
-		Logging.setLoggingDefaults(Level.WARN);
+		Logging.setLoggingDefaults();
 
 		CommandLineParser parser = new PosixParser();
 		Options options = createCommandLineOptions();
 
-		String deviceType = null;
-		String port = null;
-		Map<String, String> configuration = newHashMap();
 		DeviceMacReferenceMap deviceMacReferenceMap = null;
 
 		try {
@@ -89,61 +85,32 @@ public class DeviceMacReaderCLI {
 				org.apache.log4j.Logger.getRootLogger().setLevel(level);
 			}
 
-			if (line.hasOption('c')) {
-				final String configurationFileString = line.getOptionValue('c');
-				final File configurationFile = new File(configurationFileString);
-				final Properties configurationProperties = new Properties();
-				configurationProperties.load(new FileReader(configurationFile));
-				for (Map.Entry<Object, Object> entry : configurationProperties.entrySet()) {
-					configuration.put((String) entry.getKey(), (String) entry.getValue());
-				}
-			}
-
 			if (line.hasOption('r')) {
-				deviceMacReferenceMap = readDeviceMacReferenceMap(line.getOptionValue('m'));
+				deviceMacReferenceMap = readDeviceMacReferenceMap(line.getOptionValue('r'));
 			}
-
-			deviceType = line.getOptionValue('t');
-			port = line.getOptionValue('p');
 
 		} catch (Exception e) {
 			log.error("Invalid command line: " + e);
 			printUsageAndExit(options);
 		}
 
-		final Injector injector = Guice.createInjector(
-				new DeviceMacReaderModule(deviceMacReferenceMap),
-				new ScheduledExecutorServiceModule("DeviceMacReader")
-		);
+		final DeviceObserver deviceObserver = Guice
+				.createInjector(
+						new DeviceUtilsModule(deviceMacReferenceMap),
+						new ScheduledExecutorServiceModule(DeviceObserver.class.getSimpleName())
+				)
+				.getInstance(DeviceObserver.class);
 
-		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
-
-		String reference = null;
-		if (deviceMacReferenceMap != null) {
-
-			final DeviceObserver deviceObserver = injector.getInstance(DeviceObserver.class);
-			final ImmutableList<DeviceEvent> events = deviceObserver.getEvents(false);
-
-			for (DeviceEvent event : events) {
-				final boolean samePort = port.equals(event.getDeviceInfo().getPort());
-				if (samePort) {
-					reference = event.getDeviceInfo().getReference();
-				}
+		deviceObserver.addListener(new DeviceObserverListener() {
+			@Override
+			public void deviceEvent(final DeviceEvent event) {
+				System.out.println(event);
 			}
-		}
+		});
 
-		try {
-
-			final MacAddress macAddress = deviceMacReader.readMac(port, deviceType, reference);
-			log.info("Read MAC address of {} device at port {}: {}", new Object[]{deviceType, port, macAddress});
-			System.out.println(macAddress.toHexString());
-			System.exit(0);
-
-		} catch (Exception e) {
-			log.error("Reading MAC address failed with Exception: " + e, e);
-			System.exit(1);
-		}
-
+		final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DeviceObserver %d").build();
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, threadFactory);
+		scheduler.scheduleAtFixedRate(deviceObserver, 0, 1, TimeUnit.SECONDS);
 	}
 
 	private static DeviceMacReferenceMap readDeviceMacReferenceMap(final String fileName) throws IOException {
@@ -179,16 +146,9 @@ public class DeviceMacReaderCLI {
 
 		Options options = new Options();
 
-		options.addOption("p", "port", true, "Serial port of the device");
-		options.getOption("p").setRequired(true);
-		options.addOption("t", "type", true, "The type of the device");
-		options.getOption("t").setRequired(true);
-
+		// add all available options
 		options.addOption("r", "referencetomacmap", true,
 				"Optional: a properties file containing device references to MAC address mappings"
-		);
-		options.addOption("c", "configuration", true,
-				"File name of a configuration file containing key value pairs to configure the device"
 		);
 		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
 		options.addOption("l", "logging", true,
@@ -196,13 +156,12 @@ public class DeviceMacReaderCLI {
 		);
 		options.addOption("h", "help", false, "Help output");
 
-
 		return options;
 	}
 
 	private static void printUsageAndExit(Options options) {
 		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(120, DeviceMacReaderCLI.class.getCanonicalName(), null, options, null);
+		formatter.printHelp(120, DeviceObserverCLI.class.getCanonicalName(), null, options, null);
 		System.exit(1);
 	}
 
