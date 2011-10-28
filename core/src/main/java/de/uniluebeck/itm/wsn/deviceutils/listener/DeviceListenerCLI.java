@@ -23,41 +23,9 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.listener;
 
-import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
-import com.google.common.io.Files;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelHandler;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.DefaultChannelPipeline;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.iostream.IOStreamAddress;
-import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoderFactory;
 import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingEncoderFactory;
 import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
@@ -70,8 +38,30 @@ import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.PosixParser;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.iostream.IOStreamAddress;
+import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.collect.Maps.newHashMap;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 
 public class DeviceListenerCLI {
 
@@ -100,7 +90,7 @@ public class DeviceListenerCLI {
 			CommandLine line = parser.parse(options, args, true);
 
 			if (line.hasOption('h')) {
-				printUsageAndExit(options);
+				printUsageAndExit(DeviceListenerCLI.class, options, 0);
 			}
 
 			if (line.hasOption('v')) {
@@ -121,6 +111,8 @@ public class DeviceListenerCLI {
 					configuration.put((String) entry.getKey(), (String) entry.getValue());
 				}
 			}
+
+			assertParametersPresent(line, 't', 'p');
 
 			deviceType = line.getOptionValue('t');
 			port = line.getOptionValue('p');
@@ -151,7 +143,7 @@ public class DeviceListenerCLI {
 
 		} catch (Exception e) {
 			log.error("Invalid command line: " + e);
-			printUsageAndExit(options);
+			printUsageAndExit(DeviceListenerCLI.class, options, 1);
 		}
 
 		if (outWriter == null) {
@@ -241,28 +233,24 @@ public class DeviceListenerCLI {
 		Options options = new Options();
 
 		// add all available options
-		options.addOption("p", "port", true, "Serial port to use");
+		options.addOption("p", "port", true, "Serial port to which the device is attached");
 		options.getOption("p").setRequired(true);
-		options.addOption("t", "type", true, "Device type");
+
+		options.addOption("t", "type", true, "Type of the device");
 		options.getOption("t").setRequired(true);
+
 		options.addOption("c", "configuration", true,
-				"File name of a configuration file containing key value pairs to configure the device"
+				"Optional: file name of a configuration file containing key value pairs to configure the device"
 		);
 
-		options.addOption("f", "format", true, "Optional: Output format, options: csv, wiseml");
-		options.addOption("o", "outfile", true, "Optional: Redirect output to file");
-		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
+		options.addOption("f", "format", true, "Optional: output format, options: csv, wiseml");
+		options.addOption("o", "outfile", true, "Optional: redirect output to file");
+		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
 		options.addOption("l", "logging", true,
-				"Optional: Set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+				"Optional: set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
 		);
-		options.addOption("h", "help", false, "Help output");
+		options.addOption("h", "help", false, "Optional: print help");
 
 		return options;
-	}
-
-	private static void printUsageAndExit(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(120, DeviceListenerCLI.class.getCanonicalName(), null, options, null);
-		System.exit(1);
 	}
 }

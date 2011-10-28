@@ -23,15 +23,14 @@
 
 package de.uniluebeck.itm.wsn.deviceutils;
 
-import javax.annotation.Nullable;
-
 import com.google.inject.Binder;
 import com.google.inject.Module;
-
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderModule;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
+
+import javax.annotation.Nullable;
 
 public class DeviceUtilsModule implements Module {
 

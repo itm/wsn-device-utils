@@ -32,7 +32,10 @@ import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.PosixParser;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +48,8 @@ import java.util.Map;
 import java.util.Properties;
 
 import static com.google.common.collect.Maps.newHashMap;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 
 public class DeviceMacReaderCLI {
 
@@ -77,7 +82,7 @@ public class DeviceMacReaderCLI {
 			CommandLine line = parser.parse(options, args, true);
 
 			if (line.hasOption('h')) {
-				printUsageAndExit(options);
+				printUsageAndExit(DeviceMacReaderCLI.class, options, 0);
 			}
 
 			if (line.hasOption('v')) {
@@ -103,12 +108,14 @@ public class DeviceMacReaderCLI {
 				deviceMacReferenceMap = readDeviceMacReferenceMap(line.getOptionValue('r'));
 			}
 
+			assertParametersPresent(line, 't', 'p');
+
 			deviceType = line.getOptionValue('t');
 			port = line.getOptionValue('p');
 
 		} catch (Exception e) {
 			log.error("Invalid command line: " + e);
-			printUsageAndExit(options);
+			printUsageAndExit(DeviceMacReaderCLI.class, options, EXIT_CODE_INVALID_ARGUMENTS);
 		}
 
 		final Injector injector = Guice.createInjector(
@@ -179,31 +186,26 @@ public class DeviceMacReaderCLI {
 
 		Options options = new Options();
 
-		options.addOption("p", "port", true, "Serial port of the device");
+		options.addOption("p", "port", true, "Serial port to which the device is attached");
 		options.getOption("p").setRequired(true);
-		options.addOption("t", "type", true, "The type of the device");
+
+		options.addOption("t", "type", true, "Type of the device");
 		options.getOption("t").setRequired(true);
 
 		options.addOption("r", "referencetomacmap", true,
 				"Optional: a properties file containing device references to MAC address mappings"
 		);
 		options.addOption("c", "configuration", true,
-				"File name of a configuration file containing key value pairs to configure the device"
+				"Optional: file name of a configuration file containing key value pairs to configure the device"
 		);
-		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
+		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
 		options.addOption("l", "logging", true,
-				"Optional: Set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+				"Optional: set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
 		);
-		options.addOption("h", "help", false, "Help output");
+		options.addOption("h", "help", false, "Optional: print help");
 
 
 		return options;
-	}
-
-	private static void printUsageAndExit(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(120, DeviceMacReaderCLI.class.getCanonicalName(), null, options, null);
-		System.exit(1);
 	}
 
 }

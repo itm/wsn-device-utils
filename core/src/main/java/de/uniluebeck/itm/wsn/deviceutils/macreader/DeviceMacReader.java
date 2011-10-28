@@ -23,9 +23,9 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
-import javax.annotation.Nullable;
-
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
+
+import javax.annotation.Nullable;
 
 public interface DeviceMacReader {
 

@@ -27,7 +27,6 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.google.inject.util.Providers;
-
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
 
 import javax.annotation.Nullable;

@@ -1,15 +1,14 @@
 package de.uniluebeck.itm.wsn.deviceutils;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-
 import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class ScheduledExecutorServiceModule implements Module {
 

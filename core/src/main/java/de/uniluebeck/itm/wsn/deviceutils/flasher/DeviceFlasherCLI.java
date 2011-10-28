@@ -23,29 +23,11 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.flasher;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.base.Joiner;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
-import org.apache.commons.cli.*;
-import org.apache.log4j.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-
 import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
@@ -54,8 +36,25 @@ import de.uniluebeck.itm.wsn.drivers.core.Connection;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.PosixParser;
+import org.apache.log4j.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileReader;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Maps.newHashMap;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 
 public class DeviceFlasherCLI {
 
@@ -73,14 +72,14 @@ public class DeviceFlasherCLI {
 		String deviceType = null;
 		String port = null;
 		File imageFile = null;
-		Map<String,String> configuration = newHashMap();
+		Map<String, String> configuration = newHashMap();
 
 		try {
 
 			CommandLine line = parser.parse(options, args, true);
 
 			if (line.hasOption('h')) {
-				printUsageAndExit(options);
+				printUsageAndExit(DeviceFlasherCLI.class, options, 0);
 			}
 
 			if (line.hasOption('v')) {
@@ -102,17 +101,19 @@ public class DeviceFlasherCLI {
 				}
 			}
 
+			assertParametersPresent(line, 't', 'p', 'i');
+
 			deviceType = line.getOptionValue('t');
 			port = line.getOptionValue('p');
 			imageFile = new File(line.getOptionValue('i'));
 
 		} catch (Exception e) {
 			log.error("Invalid command line: " + e);
-			printUsageAndExit(options);
+			printUsageAndExit(DeviceFlasherCLI.class, options, 1);
 		}
-		
+
 		final Injector injector = Guice.createInjector(
-				new DeviceUtilsModule(), 
+				new DeviceUtilsModule(),
 				new ScheduledExecutorServiceModule("DeviceFlasher")
 		);
 
@@ -123,7 +124,7 @@ public class DeviceFlasherCLI {
 		if (!device.isConnected()) {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
-		
+
 		OperationCallback<Void> callback = new OperationCallback<Void>() {
 			private int lastProgress = -1;
 
@@ -174,29 +175,25 @@ public class DeviceFlasherCLI {
 		Options options = new Options();
 
 		// add all available options
-		options.addOption("p", "port", true, "Serial port to use");
-		options.addOption("t", "type", true, "Device type");
-		options.addOption("i", "image", true, "Image file to flash onto the device");
-		options.addOption("c", "configuration", true,
-				"File name of a configuration file containing key value pairs to configure the device"
-		);
-		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
-		options.addOption("l", "logging", true,
-				"Optional: Set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
-		);
-		options.addOption("h", "help", false, "Help output");
-
+		options.addOption("p", "port", true, "Serial port to which the device is attached");
 		options.getOption("p").setRequired(true);
+
+		options.addOption("t", "type", true, "Type of the device");
 		options.getOption("t").setRequired(true);
+
+		options.addOption("i", "image", true, "Image file to flash onto the device");
 		options.getOption("i").setRequired(true);
 
-		return options;
-	}
+		options.addOption("c", "configuration", true,
+				"Optional: file name of a configuration file containing key value pairs to configure the device"
+		);
+		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
+		options.addOption("l", "logging", true,
+				"Optional: set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+		);
+		options.addOption("h", "help", false, "Optional: print help");
 
-	private static void printUsageAndExit(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(120, DeviceFlasherCLI.class.getCanonicalName(), null, options, null);
-		System.exit(1);
+		return options;
 	}
 
 }

@@ -29,23 +29,26 @@ import com.google.inject.Guice;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
 import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.PosixParser;
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.Map;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 
 public class DeviceObserverCLI {
 
@@ -73,7 +76,7 @@ public class DeviceObserverCLI {
 			CommandLine line = parser.parse(options, args, true);
 
 			if (line.hasOption('h')) {
-				printUsageAndExit(options);
+				printUsageAndExit(DeviceObserverCLI.class, options, 0);
 			}
 
 			if (line.hasOption('v')) {
@@ -91,7 +94,7 @@ public class DeviceObserverCLI {
 
 		} catch (Exception e) {
 			log.error("Invalid command line: " + e);
-			printUsageAndExit(options);
+			printUsageAndExit(DeviceObserverCLI.class, options, 1);
 		}
 
 		final DeviceObserver deviceObserver = Guice
@@ -150,19 +153,13 @@ public class DeviceObserverCLI {
 		options.addOption("r", "referencetomacmap", true,
 				"Optional: a properties file containing device references to MAC address mappings"
 		);
-		options.addOption("v", "verbose", false, "Optional: Verbose logging output (equal to -l DEBUG)");
+		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
 		options.addOption("l", "logging", true,
-				"Optional: Set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+				"Optional: set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
 		);
-		options.addOption("h", "help", false, "Help output");
+		options.addOption("h", "help", false, "Optional: print help");
 
 		return options;
-	}
-
-	private static void printUsageAndExit(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp(120, DeviceObserverCLI.class.getCanonicalName(), null, options, null);
-		System.exit(1);
 	}
 
 }
