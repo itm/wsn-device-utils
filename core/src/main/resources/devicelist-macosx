@@ -38,6 +38,15 @@ sub  scan_dev {
       push(@devs, $d);
     }
   }
+  foreach (`ls /dev/tty.SLAB_USBtoUART* 2>&1`) {
+    my($dev, $serial) = /(\/dev\/tty.(\S+))/;
+    if ($serial ne "*:") {
+      my $d;
+      $d->{"InfoSerial"} = $serial;
+      $d->{"SerialDevName"} = $dev;
+      push(@devs, $d);
+    }
+  }
   return @devs;
 }
 
@@ -56,8 +65,8 @@ sub print_motelist {
   #  Print a header
   if( !$Opt{compact} ) {
     print << "EOF" unless $Opt{compact};
-Reference  Device                      Description
----------- --------------------------- ---------------------------------------
+Reference            Device                              Description
+-------------------- ----------------------------------- ---------------------------------------
 EOF
   }
 
@@ -65,7 +74,9 @@ EOF
   for my $dev (@devs) {
     my $desc = "";
     my $firstLetterSerial = substr($dev->{"InfoSerial"},0,1);
-    if ($firstLetterSerial eq "A") {
+    if (substr($dev->{"InfoSerial"}, 0, 4) eq "SLAB") {
+      $desc = "pacemate";
+    } elsif ($firstLetterSerial eq "A") {
       $desc = "xbee";
     } elsif ($firstLetterSerial eq "X") {
       $desc = "telosb";
@@ -76,7 +87,7 @@ EOF
     if( $Opt{compact} ) {
       print join(",",@output) . "\n";
     } else {
-      printf( "%-10s %-27s %s\n", @output );
+      printf( "%-20s %-35s %s\n", @output );
     }
   }
 }
