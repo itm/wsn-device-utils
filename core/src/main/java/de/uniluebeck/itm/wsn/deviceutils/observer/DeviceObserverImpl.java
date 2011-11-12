@@ -26,14 +26,14 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
-import de.uniluebeck.itm.tr.util.AbstractListenable;
+import de.uniluebeck.itm.tr.util.ListenerManagerImpl;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-class DeviceObserverImpl extends AbstractListenable<DeviceObserverListener> implements DeviceObserver {
+class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> implements DeviceObserver {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceObserver.class);
 

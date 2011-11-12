@@ -70,8 +70,6 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 				return readMacFromDevice(port, deviceType);
 			case ISENSE:
 				return readMacFromDevice(port, deviceType);
-			case NULL:
-				return readMacFromDevice(port, deviceType);
 			case PACEMATE:
 				return readMacFromDevice(port, deviceType);
 			case TELOSB:
