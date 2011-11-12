@@ -23,27 +23,11 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.flasher;
 
-import com.google.common.base.Joiner;
-import com.google.common.io.Closeables;
-import com.google.common.io.Files;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import de.uniluebeck.itm.tr.util.ExecutorUtils;
-import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
-import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
-import de.uniluebeck.itm.wsn.drivers.core.Connection;
-import de.uniluebeck.itm.wsn.drivers.core.Device;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.collect.Maps.newHashMap;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
+import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Map;
@@ -52,9 +36,27 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.collect.Maps.newHashMap;
-import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
-import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.PosixParser;
+import org.apache.log4j.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Joiner;
+import com.google.common.io.Closeables;
+import com.google.common.io.Files;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
+import de.uniluebeck.itm.tr.util.ExecutorUtils;
+import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
+import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
+import de.uniluebeck.itm.wsn.drivers.core.Device;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 
 public class DeviceFlasherCLI {
 
@@ -165,7 +167,7 @@ public class DeviceFlasherCLI {
 		}
 	}
 
-	private static void closeConnection(final ExecutorService executorService, final Connection connection) {
+	private static void closeConnection(final ExecutorService executorService, final Closeable connection) {
 		Closeables.closeQuietly(connection);
 		ExecutorUtils.shutdown(executorService, 10, TimeUnit.SECONDS);
 	}
