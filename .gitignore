@@ -2,6 +2,9 @@ target/
 .settings/
 .classpath
 .project
-wsn-device-utils.iml
-wsn-device-utils.ipr
-wsn-device-utils.iws
+*.iml
+*.ipr
+*.iws
+**/*.iml
+**/*.ipr
+**/*.iws
