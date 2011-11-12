@@ -82,11 +82,6 @@
 				<version>1.0-SNAPSHOT</version>
 			</dependency>
 			<dependency>
-				<groupId>org.jboss.netty</groupId>
-				<artifactId>netty</artifactId>
-				<version>3.2.3.Final</version>
-			</dependency>
-			<dependency>
 				<groupId>de.uniluebeck.itm.netty-iostream</groupId>
 				<artifactId>netty-iostream</artifactId>
 				<version>0.3</version>
@@ -101,7 +96,12 @@
 				<artifactId>itmutils</artifactId>
 				<version>0.3.3-SNAPSHOT</version>
 			</dependency>
-	
+
+			<dependency>
+				<groupId>org.jboss.netty</groupId>
+				<artifactId>netty</artifactId>
+				<version>3.2.6.Final</version>
+			</dependency>
 			<dependency>
 				<groupId>com.google.code.findbugs</groupId>
 				<artifactId>jsr305</artifactId>
