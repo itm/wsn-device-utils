@@ -24,10 +24,12 @@
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.Map;
+
+import static com.google.common.collect.Maps.newHashMap;
 
 public class DeviceInfoCsvParserImpl implements DeviceInfoCsvParser {
 
@@ -42,19 +44,19 @@ public class DeviceInfoCsvParserImpl implements DeviceInfoCsvParser {
 	private final Splitter colSplitter = Splitter.on(",").trimResults();
 
 	@Override
-	public ImmutableList<DeviceInfo> parseCsv(final String csv) {
+	public Map<String, DeviceInfo> parseCsv(final String csv) {
 
 		final Iterable<String> rows = rowSplitter.split(csv);
-		final ImmutableList.Builder<DeviceInfo> newStatesBuilder = ImmutableList.builder();
+		final Map<String, DeviceInfo> newState = newHashMap();
 
 		for (String row : rows) {
 			DeviceInfo info = parseRow(row);
 			if (info != null) {
-				newStatesBuilder.add(info);
+				newState.put(info.getPort(), info);
 			}
 		}
 
-		return newStatesBuilder.build();
+		return newState;
 	}
 
 	private DeviceInfo parseRow(final String row) {

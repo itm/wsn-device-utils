@@ -26,7 +26,6 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.UnmodifiableIterator;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -39,7 +38,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static com.google.common.collect.Sets.newHashSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -112,7 +113,7 @@ public class DeviceObserverTest {
 	@Test
 	public void noDeviceFoundNoDeviceAttached() {
 		setObserverStateForCsvRows();
-		assertEquals(0, deviceObserver.getEvents().size());
+		assertTrue(deviceObserver.getEvents().isEmpty());
 	}
 
 	@Test
@@ -120,11 +121,9 @@ public class DeviceObserverTest {
 
 		setObserverStateForCsvRows();
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv);
+		final ImmutableList<DeviceEvent> actualEvents = getObserverEventsForCsvRows(device1Csv);
 
-		assertEquals(1, events.size());
-		final DeviceEvent actualEvent = events.iterator().next();
-		assertEquals(device1AttachedEvent, actualEvent);
+		assertEqualEvents(actualEvents, device1AttachedEvent);
 	}
 
 	@Test
@@ -146,10 +145,7 @@ public class DeviceObserverTest {
 
 		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv, device2Csv);
 
-		assertEquals(2, events.size());
-		final UnmodifiableIterator<DeviceEvent> iterator = events.iterator();
-		assertEquals(device1AttachedEvent, iterator.next());
-		assertEquals(device2AttachedEvent, iterator.next());
+		assertEqualEvents(events, device1AttachedEvent, device2AttachedEvent);
 	}
 
 	@Test
@@ -159,10 +155,8 @@ public class DeviceObserverTest {
 
 		final ImmutableList<DeviceEvent> events =
 				getObserverEventsForCsvRows(device1Csv, device2Csv, device3Csv, device4Csv);
-		assertEquals(2, events.size());
-		final UnmodifiableIterator<DeviceEvent> iterator = events.iterator();
-		assertEquals(device3AttachedEvent, iterator.next());
-		assertEquals(device4AttachedEvent, iterator.next());
+
+		assertEqualEvents(events, device3AttachedEvent, device4AttachedEvent);
 	}
 
 	@Test
@@ -171,8 +165,8 @@ public class DeviceObserverTest {
 		setObserverStateForCsvRows(device1Csv);
 
 		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows();
-		assertEquals(1, events.size());
-		assertEquals(device1RemovedEvent, events.iterator().next());
+
+		assertEqualEvents(events, device1RemovedEvent);
 	}
 
 	@Test
@@ -181,8 +175,8 @@ public class DeviceObserverTest {
 		setObserverStateForCsvRows(device1Csv, device2Csv);
 
 		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv);
-		assertEquals(1, events.size());
-		assertEquals(device2RemovedEvent, events.iterator().next());
+
+		assertEqualEvents(events, device2RemovedEvent);
 	}
 
 	@Test
@@ -191,9 +185,8 @@ public class DeviceObserverTest {
 		setObserverStateForCsvRows(device1Csv, device2Csv);
 
 		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows();
-		assertEquals(2, events.size());
-		assertEquals(device1RemovedEvent, events.get(0));
-		assertEquals(device2RemovedEvent, events.get(1));
+
+		assertEqualEvents(events, device1RemovedEvent, device2RemovedEvent);
 	}
 
 	@Test
@@ -202,9 +195,8 @@ public class DeviceObserverTest {
 		setObserverStateForCsvRows(device1Csv, device2Csv, device3Csv, device4Csv);
 
 		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv, device2Csv);
-		assertEquals(2, events.size());
-		assertEquals(device3RemovedEvent, events.get(0));
-		assertEquals(device4RemovedEvent, events.get(1));
+
+		assertEqualEvents(events, device3RemovedEvent, device4RemovedEvent);
 	}
 
 	@Test
@@ -239,6 +231,34 @@ public class DeviceObserverTest {
 		verify(deviceCsvProvider).getDeviceCsv();
 	}
 
+	/**
+	 * https://github.com/itm/wsn-device-utils/issues/31
+	 *
+	 * @throws Exception
+	 * 		if the test fails
+	 */
+	@Test
+	public void testIfRemovedEventHoldsMacAddressWhenItWasKnownBefore() throws Exception {
+
+		MacAddress expectedMacAddress = new MacAddress("0x0123");
+
+		setCsvProviderState(device1Csv);
+		when(deviceMacReader.readMac(device1Info.getPort(), device1Info.getType(), device1Info.getReference()))
+				.thenReturn(expectedMacAddress);
+
+		// simulate some time passing (which introduced the original bug)
+		deviceObserver.getEvents(true);
+		deviceObserver.getEvents(true);
+		deviceObserver.getEvents(true);
+
+		setCsvProviderState();
+		ImmutableList<DeviceEvent> events = deviceObserver.getEvents(true);
+
+		assertEquals(1, events.size());
+		assertEquals(DeviceEvent.Type.REMOVED, events.get(0).getType());
+		assertEquals(expectedMacAddress, events.get(0).getDeviceInfo().getMacAddress());
+	}
+
 	private ImmutableList<DeviceEvent> getObserverEventsForCsvRows(final String... csvRows) {
 		setCsvProviderState(csvRows);
 		return deviceObserver.getEvents();
@@ -255,6 +275,11 @@ public class DeviceObserverTest {
 		} else {
 			when(deviceCsvProvider.getDeviceCsv()).thenReturn(Joiner.on("\n").join(csvRows));
 		}
+	}
+
+	private void assertEqualEvents(final ImmutableList<DeviceEvent> actualEvents,
+								   final DeviceEvent... expectedEvents) {
+		assertEquals(newHashSet(expectedEvents), newHashSet(actualEvents));
 	}
 
 }

@@ -23,10 +23,10 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
-import com.google.common.collect.ImmutableList;
+import java.util.Map;
 
 public interface DeviceInfoCsvParser {
 
-	ImmutableList<DeviceInfo> parseCsv(String csv);
+	Map<String, DeviceInfo> parseCsv(String csv);
 
 }

@@ -32,12 +32,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+
+import static com.google.common.collect.Maps.newHashMap;
 
 class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> implements DeviceObserver {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceObserver.class);
 
-	private ImmutableList<DeviceInfo> oldInfos = ImmutableList.of();
+	private final Map<String, DeviceInfo> attachedDevicesOld = newHashMap();
 
 	@Inject
 	private DeviceMacReader deviceMacReader;
@@ -55,14 +58,39 @@ class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> imp
 
 	@Override
 	public ImmutableList<DeviceEvent> getEvents(final boolean readMac) {
-		final ImmutableList<DeviceInfo> newInfos = deviceInfoCsvParser.parseCsv(deviceCsvProvider.getDeviceCsv());
+
+		final Map<String, DeviceInfo> newInfos = deviceInfoCsvParser.parseCsv(deviceCsvProvider.getDeviceCsv());
 		final ImmutableList<DeviceEvent> events = deriveEvents(newInfos, readMac);
-		oldInfos = newInfos;
+		updateAttachedDevicesMap(events);
 		return events;
+	}
+
+	private void updateAttachedDevicesMap(final ImmutableList<DeviceEvent> events) {
+
+		if (!events.isEmpty()) {
+
+			synchronized (attachedDevicesOld) {
+
+				for (DeviceEvent event : events) {
+
+					DeviceInfo deviceInfo = event.getDeviceInfo();
+
+					switch (event.getType()) {
+						case ATTACHED:
+							attachedDevicesOld.put(deviceInfo.getPort(), deviceInfo);
+							break;
+						case REMOVED:
+							attachedDevicesOld.remove(deviceInfo.getPort());
+							break;
+					}
+				}
+			}
+		}
 	}
 
 	@Override
 	public void run() {
+
 		if (!listeners.isEmpty()) {
 
 			for (DeviceEvent event : getEvents()) {
@@ -72,25 +100,26 @@ class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> imp
 	}
 
 
-	private ImmutableList<DeviceEvent> deriveEvents(final List<DeviceInfo> newInfos, final boolean readMac) {
+	private ImmutableList<DeviceEvent> deriveEvents(final Map<String, DeviceInfo> attachedDevicesNew, final boolean readMac) {
 
 		final ImmutableList.Builder<DeviceEvent> resultBuilder = ImmutableList.builder();
-		resultBuilder.addAll(deriveAttachedEvents(newInfos, readMac));
-		resultBuilder.addAll(deriveRemovedEvents(newInfos));
+		resultBuilder.addAll(deriveAttachedEvents(attachedDevicesNew, readMac));
+		resultBuilder.addAll(deriveRemovedEvents(attachedDevicesNew));
 		return resultBuilder.build();
 	}
 
-	private List<DeviceEvent> deriveAttachedEvents(final List<DeviceInfo> newInfos, final boolean readMac) {
+	private List<DeviceEvent> deriveAttachedEvents(final Map<String, DeviceInfo> newInfos, final boolean readMac) {
 
 		List<DeviceEvent> events = Lists.newArrayList();
-		for (DeviceInfo newInfo : newInfos) {
 
-			DeviceInfo oldInfo = getOldStateForPort(newInfo.port);
-			if (oldInfo == null) {
+		for (DeviceInfo newInfo : newInfos.values()) {
+
+			if (!attachedDevicesOld.containsKey(newInfo.getPort())) {
 
 				if (readMac) {
 					tryToEnrichWithMacAddress(newInfo);
 				}
+
 				events.add(new DeviceEvent(DeviceEvent.Type.ATTACHED, newInfo));
 			}
 		}
@@ -108,33 +137,18 @@ class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> imp
 		}
 	}
 
-	private List<DeviceEvent> deriveRemovedEvents(final List<DeviceInfo> newInfos) {
+	private List<DeviceEvent> deriveRemovedEvents(final Map<String, DeviceInfo> attachedDevicesNew) {
 
 		List<DeviceEvent> events = Lists.newArrayList();
-		for (DeviceInfo oldInfo : oldInfos) {
 
-			boolean found = false;
+		for (DeviceInfo attachedDeviceOld : attachedDevicesOld.values()) {
 
-			for (DeviceInfo newInfo : newInfos) {
-				if (newInfo.port.equals(oldInfo.port)) {
-					found = true;
-				}
-			}
-
-			if (!found) {
-				events.add(new DeviceEvent(DeviceEvent.Type.REMOVED, oldInfo));
+			if (!attachedDevicesNew.containsKey(attachedDeviceOld.getPort())) {
+				events.add(new DeviceEvent(DeviceEvent.Type.REMOVED, attachedDeviceOld));
 			}
 		}
+
 		return events;
-	}
-
-	private DeviceInfo getOldStateForPort(final String port) {
-		for (DeviceInfo oldInfo : oldInfos) {
-			if (oldInfo.port.equals(port)) {
-				return oldInfo;
-			}
-		}
-		return null;
 	}
 
 	private void notifyListeners(final DeviceEvent event) {
