@@ -40,7 +40,8 @@ sub  scan_dev {
   }
   foreach (`ls /dev/tty.SLAB_USBtoUART* 2>&1`) {
     my($dev, $serial) = /(\/dev\/tty.(\S+))/;
-    if ($serial ne "*:") {
+    my $endsWithAsterisk = $serial =~ m/.*\*\:$/;
+    if (!$endsWithAsterisk) {
       my $d;
       $d->{"InfoSerial"} = $serial;
       $d->{"SerialDevName"} = $dev;
