@@ -40,7 +40,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DeviceObserverTest {
@@ -52,6 +52,9 @@ public class DeviceObserverTest {
 
 	@Mock
 	private DeviceMacReader deviceMacReader;
+
+	@Mock
+	private DeviceObserverListener deviceObserverListener;
 
 	private final String device1Csv = "01234,/dev/ttyUSB0,isense";
 
@@ -215,6 +218,25 @@ public class DeviceObserverTest {
 		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv);
 
 		assertEquals(device1MacAddress, events.get(0).getDeviceInfo().getMacAddress());
+	}
+
+	/**
+	 * https://github.com/itm/wsn-device-utils/issues/36
+	 *
+	 * @throws Exception
+	 * 		if the test fails
+	 */
+	@Test
+	public void testNoLoadingAndEvaluationWillBeDoneUnlessAtLeastOneListenerIsRegistered() throws Exception {
+
+		setCsvProviderState();
+
+		deviceObserver.run();
+		verify(deviceCsvProvider, never()).getDeviceCsv();
+
+		deviceObserver.addListener(deviceObserverListener);
+		deviceObserver.run();
+		verify(deviceCsvProvider).getDeviceCsv();
 	}
 
 	private ImmutableList<DeviceEvent> getObserverEventsForCsvRows(final String... csvRows) {

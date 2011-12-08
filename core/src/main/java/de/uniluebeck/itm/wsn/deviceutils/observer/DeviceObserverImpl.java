@@ -63,8 +63,11 @@ class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> imp
 
 	@Override
 	public void run() {
-		for (DeviceEvent event : getEvents()) {
-			notifyListeners(event);
+		if (!listeners.isEmpty()) {
+
+			for (DeviceEvent event : getEvents()) {
+				notifyListeners(event);
+			}
 		}
 	}
 
