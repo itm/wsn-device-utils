@@ -24,17 +24,30 @@
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.uniluebeck.itm.tr.util.Listenable;
+
+import javax.annotation.Nullable;
+import java.util.Map;
 
 public interface DeviceObserver extends Runnable, Listenable<DeviceObserverListener> {
 
-	/**
-	 * Same as calling getEvents(true).
-	 *
-	 * @return
-	 */
-	ImmutableList<DeviceEvent> getEvents();
+	ImmutableList<DeviceEvent> getEvents(@Nullable ImmutableMap<String, DeviceInfo> lastState);
 
-	ImmutableList<DeviceEvent> getEvents(boolean readMac);
+	/**
+	 * Same as calling updateState(true);
+	 *
+	 * @return the old state
+	 */
+	ImmutableMap<String, DeviceInfo> updateState();
+
+	ImmutableMap<String, DeviceInfo> updateState(boolean readMacAddress);
+
+	/**
+	 * Returns the current state (i.e. the currently attached devices).
+	 *
+	 * @return the current state as a mapping from serial port to {@link DeviceInfo}
+	 */
+	ImmutableMap<String, DeviceInfo> getCurrentState();
 
 }

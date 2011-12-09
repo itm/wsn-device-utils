@@ -24,9 +24,9 @@
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
-import de.uniluebeck.itm.tr.util.ListenerManagerImpl;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,92 +34,121 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.collect.Maps.newHashMap;
+import static com.google.common.collect.Lists.newArrayList;
 
-class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> implements DeviceObserver {
+class DeviceObserverImpl implements DeviceObserver {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceObserver.class);
 
-	private final Map<String, DeviceInfo> attachedDevicesOld = newHashMap();
+	@Inject
+	private DeviceObserverListenerManager listenerManager;
 
 	@Inject
-	private DeviceMacReader deviceMacReader;
+	private DeviceMacReader macReader;
 
 	@Inject
-	private DeviceCsvProvider deviceCsvProvider;
+	private DeviceCsvProvider csvProvider;
 
 	@Inject
-	private DeviceInfoCsvParser deviceInfoCsvParser;
+	private DeviceInfoCsvParser csvParser;
+
+	private ImmutableMap<String, DeviceInfo> currentState = ImmutableMap.of();
 
 	@Override
-	public ImmutableList<DeviceEvent> getEvents() {
-		return getEvents(true);
+	public ImmutableList<DeviceEvent> getEvents(final ImmutableMap<String, DeviceInfo> lastState) {
+		return deriveEvents(lastState, currentState);
 	}
 
 	@Override
-	public ImmutableList<DeviceEvent> getEvents(final boolean readMac) {
-
-		final Map<String, DeviceInfo> newInfos = deviceInfoCsvParser.parseCsv(deviceCsvProvider.getDeviceCsv());
-		final ImmutableList<DeviceEvent> events = deriveEvents(newInfos, readMac);
-		updateAttachedDevicesMap(events);
-		return events;
+	public ImmutableMap<String, DeviceInfo> updateState() {
+		return updateState(true);
 	}
 
-	private void updateAttachedDevicesMap(final ImmutableList<DeviceEvent> events) {
+	@Override
+	public ImmutableMap<String, DeviceInfo> updateState(boolean readMacAddress) {
 
-		if (!events.isEmpty()) {
+		final ImmutableMap<String, DeviceInfo> oldState = currentState;
+		currentState = ImmutableMap.copyOf(csvParser.parseCsv(csvProvider.getDeviceCsv()));
 
-			synchronized (attachedDevicesOld) {
+		if (readMacAddress) {
 
-				for (DeviceEvent event : events) {
+			for (Map.Entry<String, DeviceInfo> currentStateEntry : currentState.entrySet()) {
 
-					DeviceInfo deviceInfo = event.getDeviceInfo();
+				if (oldState.containsKey(currentStateEntry.getKey())) {
 
-					switch (event.getType()) {
-						case ATTACHED:
-							attachedDevicesOld.put(deviceInfo.getPort(), deviceInfo);
-							break;
-						case REMOVED:
-							attachedDevicesOld.remove(deviceInfo.getPort());
-							break;
+					DeviceInfo oldDeviceInfo = oldState.get(currentStateEntry.getKey());
+					DeviceInfo newDeviceInfo = currentStateEntry.getValue();
+
+					if (oldDeviceInfo.getMacAddress() != null) {
+						newDeviceInfo.macAddress = oldDeviceInfo.macAddress;
+					} else {
+						tryToEnrichWithMacAddress(newDeviceInfo);
 					}
+				} else {
+					tryToEnrichWithMacAddress(currentStateEntry.getValue());
 				}
 			}
 		}
+
+		return oldState;
+	}
+
+	@Override
+	public ImmutableMap<String, DeviceInfo> getCurrentState() {
+		return currentState;
 	}
 
 	@Override
 	public void run() {
 
-		if (!listeners.isEmpty()) {
+		if (listenerManager.getListeners().isEmpty()) {
+			return;
+		}
 
-			for (DeviceEvent event : getEvents()) {
-				notifyListeners(event);
+		updateState();
+
+		for (DeviceObserverListener listener : listenerManager.getListeners()) {
+
+			final ImmutableMap<String, DeviceInfo> listenerLastState = listenerManager.getLastState(listener);
+			final ImmutableList<DeviceEvent> events = deriveEvents(listenerLastState, currentState);
+
+			for (DeviceEvent event : events) {
+				notifyListener(listener, event);
 			}
+
+			listenerManager.updateLastState(listener, currentState);
 		}
 	}
 
+	@Override
+	public void addListener(final DeviceObserverListener listener) {
+		listenerManager.addListener(listener);
+	}
 
-	private ImmutableList<DeviceEvent> deriveEvents(final Map<String, DeviceInfo> attachedDevicesNew, final boolean readMac) {
+	@Override
+	public void removeListener(final DeviceObserverListener listener) {
+		listenerManager.removeListener(listener);
+	}
+
+	private ImmutableList<DeviceEvent> deriveEvents(final Map<String, DeviceInfo> lastState,
+													final Map<String, DeviceInfo> currentState) {
 
 		final ImmutableList.Builder<DeviceEvent> resultBuilder = ImmutableList.builder();
-		resultBuilder.addAll(deriveAttachedEvents(attachedDevicesNew, readMac));
-		resultBuilder.addAll(deriveRemovedEvents(attachedDevicesNew));
+
+		resultBuilder.addAll(deriveAttachedEvents(lastState, currentState));
+		resultBuilder.addAll(deriveRemovedEvents(lastState, currentState));
+
 		return resultBuilder.build();
 	}
 
-	private List<DeviceEvent> deriveAttachedEvents(final Map<String, DeviceInfo> newInfos, final boolean readMac) {
+	private List<DeviceEvent> deriveAttachedEvents(final Map<String, DeviceInfo> lastState,
+												   final Map<String, DeviceInfo> currentState) {
 
 		List<DeviceEvent> events = Lists.newArrayList();
 
-		for (DeviceInfo newInfo : newInfos.values()) {
+		for (DeviceInfo newInfo : currentState.values()) {
 
-			if (!attachedDevicesOld.containsKey(newInfo.getPort())) {
-
-				if (readMac) {
-					tryToEnrichWithMacAddress(newInfo);
-				}
-
+			if (lastState == null || !lastState.containsKey(newInfo.getPort())) {
 				events.add(new DeviceEvent(DeviceEvent.Type.ATTACHED, newInfo));
 			}
 		}
@@ -129,7 +158,7 @@ class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> imp
 
 	private void tryToEnrichWithMacAddress(final DeviceInfo deviceInfo) {
 		try {
-			deviceInfo.macAddress = deviceMacReader.readMac(deviceInfo.port, deviceInfo.type, deviceInfo.reference);
+			deviceInfo.macAddress = macReader.readMac(deviceInfo.port, deviceInfo.type, deviceInfo.reference);
 		} catch (Exception e) {
 			log.debug("Could not read MAC address of {} node on port {}. Reason: {}",
 					new Object[]{deviceInfo.type, deviceInfo.port, e}
@@ -137,23 +166,30 @@ class DeviceObserverImpl extends ListenerManagerImpl<DeviceObserverListener> imp
 		}
 	}
 
-	private List<DeviceEvent> deriveRemovedEvents(final Map<String, DeviceInfo> attachedDevicesNew) {
+	private List<DeviceEvent> deriveRemovedEvents(final Map<String, DeviceInfo> lastState,
+												  final Map<String, DeviceInfo> currentState) {
+
+		if (lastState == null) {
+			return newArrayList();
+		}
 
 		List<DeviceEvent> events = Lists.newArrayList();
 
-		for (DeviceInfo attachedDeviceOld : attachedDevicesOld.values()) {
+		for (DeviceInfo lastStateDevice : lastState.values()) {
 
-			if (!attachedDevicesNew.containsKey(attachedDeviceOld.getPort())) {
-				events.add(new DeviceEvent(DeviceEvent.Type.REMOVED, attachedDeviceOld));
+			if (!currentState.containsKey(lastStateDevice.getPort())) {
+				events.add(new DeviceEvent(DeviceEvent.Type.REMOVED, lastStateDevice));
 			}
 		}
 
 		return events;
 	}
 
-	private void notifyListeners(final DeviceEvent event) {
-		for (DeviceObserverListener listener : listeners) {
+	private void notifyListener(final DeviceObserverListener listener, final DeviceEvent event) {
+		try {
 			listener.deviceEvent(event);
+		} catch (Exception e) {
+			log.warn("Exception occurred while notifying {} listener: {}", listener, e);
 		}
 	}
 }

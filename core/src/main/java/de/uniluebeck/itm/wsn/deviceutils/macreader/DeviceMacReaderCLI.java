@@ -129,7 +129,7 @@ public class DeviceMacReaderCLI {
 		if (deviceMacReferenceMap != null) {
 
 			final DeviceObserver deviceObserver = injector.getInstance(DeviceObserver.class);
-			final ImmutableList<DeviceEvent> events = deviceObserver.getEvents(false);
+			final ImmutableList<DeviceEvent> events = deviceObserver.getEvents(null);
 
 			for (DeviceEvent event : events) {
 				final boolean samePort = port.equals(event.getDeviceInfo().getPort());

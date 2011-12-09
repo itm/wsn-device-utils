@@ -26,6 +26,7 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -35,8 +36,12 @@ import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import javax.annotation.Nullable;
+import java.util.List;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static org.junit.Assert.assertEquals;
@@ -56,6 +61,9 @@ public class DeviceObserverTest {
 
 	@Mock
 	private DeviceObserverListener deviceObserverListener;
+
+	@Mock
+	private DeviceObserverListener deviceObserverListener2;
 
 	private final String device1Csv = "01234,/dev/ttyUSB0,isense";
 
@@ -103,6 +111,7 @@ public class DeviceObserverTest {
 				binder.bind(DeviceMacReader.class).toInstance(deviceMacReader);
 				binder.bind(DeviceCsvProvider.class).toInstance(deviceCsvProvider);
 				binder.bind(DeviceInfoCsvParser.class).to(DeviceInfoCsvParserImpl.class);
+				binder.bind(DeviceObserverListenerManager.class).to(DeviceObserverListenerManagerImpl.class);
 				binder.bind(DeviceObserver.class).to(DeviceObserverImpl.class);
 			}
 		}
@@ -113,7 +122,7 @@ public class DeviceObserverTest {
 	@Test
 	public void noDeviceFoundNoDeviceAttached() {
 		setObserverStateForCsvRows();
-		assertTrue(deviceObserver.getEvents().isEmpty());
+		assertTrue(deviceObserver.getEvents(null).isEmpty());
 	}
 
 	@Test
@@ -121,7 +130,7 @@ public class DeviceObserverTest {
 
 		setObserverStateForCsvRows();
 
-		final ImmutableList<DeviceEvent> actualEvents = getObserverEventsForCsvRows(device1Csv);
+		final ImmutableList<DeviceEvent> actualEvents = getObserverEventsForCsvRows(null, device1Csv);
 
 		assertEqualEvents(actualEvents, device1AttachedEvent);
 	}
@@ -129,9 +138,11 @@ public class DeviceObserverTest {
 	@Test
 	public void singleDeviceFoundWhenSomeDevicesWereAttachedBefore() {
 
-		setObserverStateForCsvRows(device1Csv, device2Csv);
+		getObserverEventsForCsvRows(null, device1Csv, device2Csv);
+		ImmutableMap<String, DeviceInfo> lastState = deviceObserver.getCurrentState();
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv, device2Csv, device3Csv);
+		final ImmutableList<DeviceEvent> events =
+				getObserverEventsForCsvRows(lastState, device1Csv, device2Csv, device3Csv);
 
 		assertEquals(1, events.size());
 		final DeviceEvent actualEvent = events.iterator().next();
@@ -143,7 +154,7 @@ public class DeviceObserverTest {
 
 		setObserverStateForCsvRows();
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv, device2Csv);
+		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(null, device1Csv, device2Csv);
 
 		assertEqualEvents(events, device1AttachedEvent, device2AttachedEvent);
 	}
@@ -152,9 +163,10 @@ public class DeviceObserverTest {
 	public void multipleDevicesFoundWhenMultipleDevicesWereAttachedBefore() {
 
 		setObserverStateForCsvRows(device1Csv, device2Csv);
+		ImmutableMap<String, DeviceInfo> lastState = deviceObserver.getCurrentState();
 
 		final ImmutableList<DeviceEvent> events =
-				getObserverEventsForCsvRows(device1Csv, device2Csv, device3Csv, device4Csv);
+				getObserverEventsForCsvRows(lastState, device1Csv, device2Csv, device3Csv, device4Csv);
 
 		assertEqualEvents(events, device3AttachedEvent, device4AttachedEvent);
 	}
@@ -163,8 +175,9 @@ public class DeviceObserverTest {
 	public void singleDeviceRemovedWhenOnlyOneDeviceWasAttachedBefore() {
 
 		setObserverStateForCsvRows(device1Csv);
+		ImmutableMap<String, DeviceInfo> lastState = deviceObserver.getCurrentState();
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows();
+		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(lastState);
 
 		assertEqualEvents(events, device1RemovedEvent);
 	}
@@ -173,8 +186,9 @@ public class DeviceObserverTest {
 	public void singleDeviceRemovedWhenMultipleDevicesWereAttachedBefore() {
 
 		setObserverStateForCsvRows(device1Csv, device2Csv);
+		ImmutableMap<String, DeviceInfo> lastState = deviceObserver.getCurrentState();
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv);
+		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(lastState, device1Csv);
 
 		assertEqualEvents(events, device2RemovedEvent);
 	}
@@ -183,8 +197,9 @@ public class DeviceObserverTest {
 	public void multipleDevicesRemovedWhenOnlyTheseWereAttachedBefore() {
 
 		setObserverStateForCsvRows(device1Csv, device2Csv);
+		ImmutableMap<String, DeviceInfo> lastState = deviceObserver.getCurrentState();
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows();
+		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(lastState);
 
 		assertEqualEvents(events, device1RemovedEvent, device2RemovedEvent);
 	}
@@ -193,8 +208,9 @@ public class DeviceObserverTest {
 	public void multipleDevicesRemovedWhenSomeDevicesBefore() {
 
 		setObserverStateForCsvRows(device1Csv, device2Csv, device3Csv, device4Csv);
+		ImmutableMap<String, DeviceInfo> lastState = deviceObserver.getCurrentState();
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv, device2Csv);
+		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(lastState, device1Csv, device2Csv);
 
 		assertEqualEvents(events, device3RemovedEvent, device4RemovedEvent);
 	}
@@ -207,7 +223,7 @@ public class DeviceObserverTest {
 		when(deviceMacReader.readMac(device1Info.getPort(), device1Info.getType(), device1Info.getReference()))
 				.thenReturn(device1MacAddress);
 
-		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(device1Csv);
+		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(null, device1Csv);
 
 		assertEquals(device1MacAddress, events.get(0).getDeviceInfo().getMacAddress());
 	}
@@ -246,27 +262,82 @@ public class DeviceObserverTest {
 		when(deviceMacReader.readMac(device1Info.getPort(), device1Info.getType(), device1Info.getReference()))
 				.thenReturn(expectedMacAddress);
 
+		deviceObserver.updateState();
+		ImmutableMap<String, DeviceInfo> lastState = deviceObserver.getCurrentState();
+
 		// simulate some time passing (which introduced the original bug)
-		deviceObserver.getEvents(true);
-		deviceObserver.getEvents(true);
-		deviceObserver.getEvents(true);
+		deviceObserver.updateState();
+		deviceObserver.updateState();
 
 		setCsvProviderState();
-		ImmutableList<DeviceEvent> events = deviceObserver.getEvents(true);
+		deviceObserver.updateState();
+		ImmutableList<DeviceEvent> events = deviceObserver.getEvents(lastState);
 
 		assertEquals(1, events.size());
 		assertEquals(DeviceEvent.Type.REMOVED, events.get(0).getType());
 		assertEquals(expectedMacAddress, events.get(0).getDeviceInfo().getMacAddress());
 	}
 
-	private ImmutableList<DeviceEvent> getObserverEventsForCsvRows(final String... csvRows) {
+	/**
+	 * https://github.com/itm/wsn-device-utils/issues/37
+	 *
+	 * @throws Exception
+	 * 		if the test fails
+	 */
+	@Test
+	public void testIfListenerGetsFullDiffToNullStateEvenIfNoChangesOccurred() throws Exception {
+
+		setCsvProviderState(device1Csv);
+		deviceObserver.run();
+
+		deviceObserver.addListener(deviceObserverListener);
+		deviceObserver.run();
+
+		ArgumentCaptor<DeviceEvent> argumentCaptor = ArgumentCaptor.forClass(DeviceEvent.class);
+		verify(deviceObserverListener).deviceEvent(argumentCaptor.capture());
+
+		assertEqualEvents(argumentCaptor.getAllValues(), device1AttachedEvent);
+	}
+
+	/**
+	 * https://github.com/itm/wsn-device-utils/issues/37
+	 *
+	 * @throws Exception
+	 * 		if the test fails
+	 */
+	@Test
+	public void testIfSecondListenerGetsFullDiffAlthoughFirstListenerGetsNone() throws Exception {
+
+		setCsvProviderState(device1Csv);
+		deviceObserver.run();
+
+		deviceObserver.addListener(deviceObserverListener);
+		deviceObserver.run();
+
+		ArgumentCaptor<DeviceEvent> argumentCaptor = ArgumentCaptor.forClass(DeviceEvent.class);
+		verify(deviceObserverListener).deviceEvent(argumentCaptor.capture());
+		assertEqualEvents(argumentCaptor.getAllValues(), device1AttachedEvent);
+
+		deviceObserver.addListener(deviceObserverListener2);
+		deviceObserver.run();
+
+		ArgumentCaptor<DeviceEvent> argumentCaptor2 = ArgumentCaptor.forClass(DeviceEvent.class);
+		verify(deviceObserverListener2).deviceEvent(argumentCaptor2.capture());
+		assertEquals(argumentCaptor2.getValue(), device1AttachedEvent);
+	}
+
+	private ImmutableList<DeviceEvent> getObserverEventsForCsvRows(
+			@Nullable final ImmutableMap<String, DeviceInfo> lastState,
+			final String... csvRows) {
+
 		setCsvProviderState(csvRows);
-		return deviceObserver.getEvents();
+		deviceObserver.updateState();
+		return deviceObserver.getEvents(lastState);
 	}
 
 	private void setObserverStateForCsvRows(final String... csvRows) {
 		setCsvProviderState(csvRows);
-		deviceObserver.getEvents();
+		deviceObserver.updateState();
 	}
 
 	private void setCsvProviderState(final String... csvRows) {
@@ -275,6 +346,10 @@ public class DeviceObserverTest {
 		} else {
 			when(deviceCsvProvider.getDeviceCsv()).thenReturn(Joiner.on("\n").join(csvRows));
 		}
+	}
+
+	private void assertEqualEvents(final List<DeviceEvent> actualEvents, final DeviceEvent... expectedEvents) {
+		assertEquals(newHashSet(expectedEvents), newHashSet(actualEvents));
 	}
 
 	private void assertEqualEvents(final ImmutableList<DeviceEvent> actualEvents,

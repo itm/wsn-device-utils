@@ -32,6 +32,7 @@ public class DeviceObserverModule implements Module {
 	public void configure(final Binder binder) {
 		binder.bind(DeviceInfoCsvParser.class).to(DeviceInfoCsvParserImpl.class);
 		binder.bind(DeviceCsvProvider.class).to(DeviceCsvProviderImpl.class);
+		binder.bind(DeviceObserverListenerManager.class).to(DeviceObserverListenerManagerImpl.class);
 		binder.bind(DeviceObserver.class).to(DeviceObserverImpl.class);
 	}
 }
