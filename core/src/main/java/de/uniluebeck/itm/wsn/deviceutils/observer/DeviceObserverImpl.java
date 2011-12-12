@@ -160,7 +160,7 @@ class DeviceObserverImpl implements DeviceObserver {
 		try {
 			deviceInfo.macAddress = macReader.readMac(deviceInfo.port, deviceInfo.type, deviceInfo.reference);
 		} catch (Exception e) {
-			log.debug("Could not read MAC address of {} node on port {}. Reason: {}",
+			log.trace("Could not read MAC address of {} node on port {}. Reason: {}",
 					new Object[]{deviceInfo.type, deviceInfo.port, e}
 			);
 		}
