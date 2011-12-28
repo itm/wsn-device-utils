@@ -24,13 +24,9 @@
 package de.uniluebeck.itm.wsn.deviceutils.listener;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.HashMultimap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingDecoderFactory;
-import de.uniluebeck.itm.netty.handlerstack.dlestxetx.DleStxEtxFramingEncoderFactory;
 import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
 import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.tr.util.Tuple;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
@@ -52,7 +48,6 @@ import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -68,7 +63,7 @@ public class DeviceListenerCLI {
 	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
 	private final static org.slf4j.Logger log = LoggerFactory.getLogger(DeviceListenerCLI.class);
-	
+
 	private static final DeviceFactory factory = new DeviceFactoryImpl();
 
 	public static void main(String[] args) throws InterruptedException, IOException {
@@ -80,7 +75,7 @@ public class DeviceListenerCLI {
 
 		String deviceType = null;
 		String port = null;
-		Map<String,String> configuration = newHashMap();
+		Map<String, String> configuration = newHashMap();
 
 		OutputStream outStream = System.out;
 		Writer outWriter = null;
@@ -164,11 +159,11 @@ public class DeviceListenerCLI {
 		);
 
 		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
-				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
+				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
 		);
 
 		final ExecutorService executorService = Executors.newCachedThreadPool(
-				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter-Thread %d").build()
+				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
 		);
 
 		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(
@@ -177,7 +172,7 @@ public class DeviceListenerCLI {
 		);
 
 		final Device deviceAsync = factory.create(delegate, deviceType, configuration);
-		
+
 		deviceAsync.connect(port);
 		if (!deviceAsync.isConnected()) {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
@@ -191,19 +186,6 @@ public class DeviceListenerCLI {
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 			public ChannelPipeline getPipeline() throws Exception {
 				DefaultChannelPipeline pipeline = new DefaultChannelPipeline();
-
-				final List<Tuple<String, ChannelHandler>> decoders = new DleStxEtxFramingDecoderFactory().create(
-						"frameDecoder",
-						HashMultimap.<String, String>create()
-				);
-				pipeline.addLast("frameDecoder", decoders.get(0).getSecond());
-
-				final List<Tuple<String, ChannelHandler>> encoders = new DleStxEtxFramingEncoderFactory().create(
-						"frameEncoder",
-						HashMultimap.<String, String>create()
-				);
-				pipeline.addLast("frameEncoder", encoders.get(0).getSecond());
-
 				pipeline.addLast("loggingHandler", new SimpleChannelHandler() {
 					@Override
 					public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e)
