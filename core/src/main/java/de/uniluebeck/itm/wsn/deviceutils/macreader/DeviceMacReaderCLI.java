@@ -25,10 +25,11 @@ package de.uniluebeck.itm.wsn.deviceutils.macreader;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
@@ -46,6 +47,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
@@ -120,8 +123,14 @@ public class DeviceMacReaderCLI {
 
 		final Injector injector = Guice.createInjector(
 				new DeviceMacReaderModule(deviceMacReferenceMap),
-				new ScheduledExecutorServiceModule("DeviceMacReader")
-		);
+				new AbstractModule() {
+					@Override
+					protected void configure() {
+						bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool(
+								new ThreadFactoryBuilder().setNameFormat("DeviceMacReader %d").build()
+						));
+					}
+				});
 
 		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
 
