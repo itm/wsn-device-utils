@@ -79,7 +79,7 @@
 			<dependency>
 				<groupId>de.uniluebeck.itm</groupId>
 				<artifactId>wsn-device-drivers-factories</artifactId>
-				<version>1.0</version>
+				<version>1.0.2</version>
 			</dependency>
 			<dependency>
 				<groupId>de.uniluebeck.itm.netty-iostream</groupId>
@@ -165,6 +165,14 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.2.2</version>
+                <configuration>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                </configuration>
+         	</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>

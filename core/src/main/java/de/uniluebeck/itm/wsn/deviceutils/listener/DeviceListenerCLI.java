@@ -25,7 +25,6 @@ package de.uniluebeck.itm.wsn.deviceutils.listener;
 
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
@@ -52,7 +51,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
@@ -158,20 +156,11 @@ public class DeviceListenerCLI {
 		}
 		);
 
-		final ScheduledExecutorService scheduleService = Executors.newScheduledThreadPool(1,
-				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
-		);
-
 		final ExecutorService executorService = Executors.newCachedThreadPool(
 				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
 		);
 
-		final ForwardingScheduledExecutorService delegate = new ForwardingScheduledExecutorService(
-				scheduleService,
-				executorService
-		);
-
-		final Device deviceAsync = factory.create(delegate, deviceType, configuration);
+		final Device deviceAsync = factory.create(executorService, deviceType, configuration);
 
 		deviceAsync.connect(port);
 		if (!deviceAsync.isConnected()) {

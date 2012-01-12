@@ -25,13 +25,13 @@ package de.uniluebeck.itm.wsn.deviceutils.macwriter;
 
 import com.google.common.base.Joiner;
 import com.google.common.io.Closeables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
-import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
@@ -48,9 +48,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
@@ -125,12 +123,10 @@ public class DeviceMacWriterCLI {
 		}
 		);
 
-		final Injector injector = Guice.createInjector(
-				new DeviceUtilsModule(), 
-				new ScheduledExecutorServiceModule("DeviceMacWriter")
-		);
+		final Injector injector = Guice.createInjector(new DeviceUtilsModule());
 
-		final ScheduledExecutorService executorService = injector.getInstance(ScheduledExecutorService.class);
+		final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter %d").build();
+		final ExecutorService executorService = Executors.newCachedThreadPool(threadFactory);
 		final Device device = injector.getInstance(DeviceFactory.class).create(executorService, deviceType, configuration);
 		
 		device.connect(port);

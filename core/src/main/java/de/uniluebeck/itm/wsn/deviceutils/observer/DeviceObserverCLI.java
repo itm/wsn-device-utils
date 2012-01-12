@@ -25,6 +25,7 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
@@ -43,10 +44,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 
@@ -100,7 +98,12 @@ public class DeviceObserverCLI {
 		final DeviceObserver deviceObserver = Guice
 				.createInjector(
 						new DeviceUtilsModule(deviceMacReferenceMap),
-						new ScheduledExecutorServiceModule(DeviceObserver.class.getSimpleName())
+						new AbstractModule() {
+							@Override
+							protected void configure() {
+								bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool());
+							}
+						}
 				)
 				.getInstance(DeviceObserver.class);
 

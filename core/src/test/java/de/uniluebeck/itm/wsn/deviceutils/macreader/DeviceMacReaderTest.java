@@ -17,7 +17,7 @@ import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doNothing;
@@ -29,7 +29,7 @@ public class DeviceMacReaderTest {
 	private DeviceMacReader deviceMacReader;
 	
 	@Mock
-	private ScheduledExecutorService scheduledExecutorService;
+	private ExecutorService executorService;
 
 	@Mock
 	private DeviceFactory deviceFactory;
@@ -62,7 +62,7 @@ public class DeviceMacReaderTest {
 		final Injector injector = Guice.createInjector(new Module() {
 			@Override
 			public void configure(final Binder binder) {
-				binder.bind(ScheduledExecutorService.class).toInstance(scheduledExecutorService);
+				binder.bind(ExecutorService.class).toInstance(executorService);
 				binder.bind(DeviceFactory.class).toInstance(deviceFactory);
 				binder.bind(DeviceMacReferenceMap.class).toInstance(deviceMacReferenceMap);
 				binder.bind(Boolean.class).annotatedWith(Names.named("use16BitMode")).toInstance(use16BitMode);
@@ -72,7 +72,7 @@ public class DeviceMacReaderTest {
 
 		deviceMacReader = injector.getInstance(DeviceMacReader.class);
 		
-		when(deviceFactory.create(scheduledExecutorService, deviceType)).thenReturn(device);
+		when(deviceFactory.create(executorService, deviceType)).thenReturn(device);
 		doNothing().when(device).connect(port);
 		when(device.isConnected()).thenReturn(true);
 		when(device.readMac(Matchers.anyInt(), Matchers.<OperationCallback<MacAddress>>any())).thenReturn(future);

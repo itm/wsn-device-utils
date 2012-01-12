@@ -37,19 +37,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 
 public class DeviceMacReaderImpl implements DeviceMacReader {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceMacReaderImpl.class);
-	
+
 	private static final int TIMEOUT = 300000;
 
 	@Inject
 	private DeviceFactory deviceFactory;
-	
+
 	@Inject
-	private ScheduledExecutorService executorService;
+	private ExecutorService executorService;
 
 	@Inject
 	@Nullable
@@ -96,7 +96,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 			tryToConnect(device, port);
 			final OperationCallback<MacAddress> callback = new OperationCallbackAdapter<MacAddress>() {
 				private int lastProgress = -1;
-				
+
 				@Override
 				public void onProgressChange(float fraction) {
 					int newProgress = (int) Math.floor(fraction * 100);
@@ -127,7 +127,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 			} catch (Exception e) {
 			}
 		}
-		
+
 		if (!device.isConnected()) {
 			throw new Exception("Connection to device at port \"" + port + "\" could not be established!");
 		}
