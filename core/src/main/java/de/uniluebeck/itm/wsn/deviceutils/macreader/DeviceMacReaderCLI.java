@@ -79,6 +79,7 @@ public class DeviceMacReaderCLI {
 		String port = null;
 		Map<String, String> configuration = newHashMap();
 		DeviceMacReferenceMap deviceMacReferenceMap = null;
+		boolean use16BitMode = true;
 
 		try {
 
@@ -115,6 +116,7 @@ public class DeviceMacReaderCLI {
 
 			deviceType = line.getOptionValue('t');
 			port = line.getOptionValue('p');
+			use16BitMode = !line.hasOption('x');
 
 		} catch (Exception e) {
 			log.error("Invalid command line: " + e);
@@ -122,7 +124,7 @@ public class DeviceMacReaderCLI {
 		}
 
 		final Injector injector = Guice.createInjector(
-				new DeviceMacReaderModule(deviceMacReferenceMap),
+				new DeviceMacReaderModule(deviceMacReferenceMap, use16BitMode),
 				new AbstractModule() {
 					@Override
 					protected void configure() {
@@ -200,6 +202,9 @@ public class DeviceMacReaderCLI {
 
 		options.addOption("t", "type", true, "Type of the device");
 		options.getOption("t").setRequired(true);
+
+		options.addOption("x", "use64BitMode", false, "Set if you want to write the MAC in 64 bit mode");
+		options.getOption("x").setRequired(false);
 
 		options.addOption("r", "referencetomacmap", true,
 				"Optional: a properties file containing device references to MAC address mappings"

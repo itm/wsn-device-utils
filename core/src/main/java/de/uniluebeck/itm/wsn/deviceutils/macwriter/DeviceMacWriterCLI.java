@@ -71,6 +71,7 @@ public class DeviceMacWriterCLI {
 		String port = null;
 		String macAddressLower16String = null;
 		Map<String,String> configuration = newHashMap();
+		boolean use16BitMode = true;
 
 		try {
 
@@ -104,6 +105,7 @@ public class DeviceMacWriterCLI {
 			deviceType = line.getOptionValue('t');
 			port = line.getOptionValue('p');
 			macAddressLower16String = line.getOptionValue('m');
+			use16BitMode = !line.hasOption('x');
 
 		} catch (Exception e) {
 			log.error("Invalid command line: " + e);
@@ -123,7 +125,7 @@ public class DeviceMacWriterCLI {
 		}
 		);
 
-		final Injector injector = Guice.createInjector(new DeviceUtilsModule());
+		final Injector injector = Guice.createInjector(new DeviceUtilsModule(null, use16BitMode));
 
 		final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter %d").build();
 		final ExecutorService executorService = Executors.newCachedThreadPool(threadFactory);
@@ -200,6 +202,9 @@ public class DeviceMacWriterCLI {
 
 		options.addOption("m", "mac", true, "MAC address to write to the device");
 		options.getOption("m").setRequired(true);
+
+		options.addOption("x", "use64BitMode", false, "Set if you want to write the MAC in 64 bit mode");
+		options.getOption("x").setRequired(false);
 
 		options.addOption("c", "configuration", true,
 				"Optional: file name of a configuration file containing key value pairs to configure the device"
