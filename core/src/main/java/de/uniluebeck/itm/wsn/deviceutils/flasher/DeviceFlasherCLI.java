@@ -112,10 +112,11 @@ public class DeviceFlasherCLI {
 			printUsageAndExit(DeviceFlasherCLI.class, options, 1);
 		}
 
-		final Injector injector = Guice.createInjector(new DeviceUtilsModule());
 		final ExecutorService executorService = Executors.newCachedThreadPool(
 				new ThreadFactoryBuilder().setNameFormat("DeviceFlasher %d").build()
 		);
+
+		final Injector injector = Guice.createInjector(new DeviceUtilsModule(executorService, null));
 		final Device device = injector.getInstance(DeviceFactory.class).create(executorService, deviceType);
 
 		device.connect(port);

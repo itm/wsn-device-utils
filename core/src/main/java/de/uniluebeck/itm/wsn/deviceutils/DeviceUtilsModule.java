@@ -31,29 +31,29 @@ import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.ExecutorService;
 
 public class DeviceUtilsModule implements Module {
+
+	private final ExecutorService executorService;
 
 	private final DeviceMacReferenceMap deviceMacReferenceMap;
 
 	private final boolean use16BitMode;
 	
-	public DeviceUtilsModule() {
-		this(null, true);
+	public DeviceUtilsModule(final ExecutorService executorService, @Nullable DeviceMacReferenceMap deviceMacReferenceMap) {
+		this(executorService, deviceMacReferenceMap, true);
 	}
 
-	public DeviceUtilsModule(@Nullable DeviceMacReferenceMap deviceMacReferenceMap) {
-		this(deviceMacReferenceMap, true);
-	}
-
-	public DeviceUtilsModule(@Nullable DeviceMacReferenceMap deviceMacReferenceMap, boolean use16BitMode) {
+	public DeviceUtilsModule(final ExecutorService executorService, @Nullable DeviceMacReferenceMap deviceMacReferenceMap, boolean use16BitMode) {
+		this.executorService = executorService;
 		this.deviceMacReferenceMap = deviceMacReferenceMap;
 		this.use16BitMode = use16BitMode;
 	}
 
 	@Override
 	public void configure(final Binder binder) {
-		binder.install(new DeviceMacReaderModule(deviceMacReferenceMap, use16BitMode));
+		binder.install(new DeviceMacReaderModule(executorService, deviceMacReferenceMap, use16BitMode));
 		binder.bind(DeviceFactory.class).to(DeviceFactoryImpl.class);
 	}
 }

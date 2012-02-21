@@ -26,7 +26,6 @@ package de.uniluebeck.itm.wsn.deviceutils.macreader;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import de.uniluebeck.itm.tr.util.Logging;
@@ -123,16 +122,13 @@ public class DeviceMacReaderCLI {
 			printUsageAndExit(DeviceMacReaderCLI.class, options, EXIT_CODE_INVALID_ARGUMENTS);
 		}
 
+		ExecutorService executorService = Executors.newCachedThreadPool(
+				new ThreadFactoryBuilder().setNameFormat("DeviceMacReader %d").build()
+		);
+
 		final Injector injector = Guice.createInjector(
-				new DeviceMacReaderModule(deviceMacReferenceMap, use16BitMode),
-				new AbstractModule() {
-					@Override
-					protected void configure() {
-						bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool(
-								new ThreadFactoryBuilder().setNameFormat("DeviceMacReader %d").build()
-						));
-					}
-				});
+				new DeviceMacReaderModule(executorService, deviceMacReferenceMap, use16BitMode)
+		);
 
 		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
 
