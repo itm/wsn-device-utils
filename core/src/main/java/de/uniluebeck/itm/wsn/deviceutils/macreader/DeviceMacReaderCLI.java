@@ -121,16 +121,13 @@ public class DeviceMacReaderCLI {
 			printUsageAndExit(DeviceMacReaderCLI.class, options, EXIT_CODE_INVALID_ARGUMENTS);
 		}
 
+		ExecutorService executorService = Executors.newCachedThreadPool(
+				new ThreadFactoryBuilder().setNameFormat("DeviceMacReader %d").build()
+		);
+
 		final Injector injector = Guice.createInjector(
-				new DeviceMacReaderModule(deviceMacReferenceMap),
-				new AbstractModule() {
-					@Override
-					protected void configure() {
-						bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool(
-								new ThreadFactoryBuilder().setNameFormat("DeviceMacReader %d").build()
-						));
-					}
-				});
+				new DeviceMacReaderModule(executorService, deviceMacReferenceMap)
+		);
 
 		final DeviceMacReader deviceMacReader = injector.getInstance(DeviceMacReader.class);
 

@@ -30,18 +30,26 @@ import com.google.inject.util.Providers;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserverModule;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.ExecutorService;
 
 public class DeviceMacReaderModule implements Module {
+
+	private final ExecutorService executorService;
 
 	private final DeviceMacReferenceMap deviceMacReferenceMap;
 
 	private final boolean use16BitMode;
 
-	public DeviceMacReaderModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap) {
-		this(deviceMacReferenceMap, true);
+	public DeviceMacReaderModule(final ExecutorService executorService,
+								 @Nullable final DeviceMacReferenceMap deviceMacReferenceMap) {
+		this(executorService, deviceMacReferenceMap, true);
 	}
 
-	public DeviceMacReaderModule(@Nullable final DeviceMacReferenceMap deviceMacReferenceMap, final boolean use16BitMode) {
+	public DeviceMacReaderModule(final ExecutorService executorService,
+								 @Nullable final DeviceMacReferenceMap deviceMacReferenceMap,
+								 final boolean use16BitMode) {
+
+		this.executorService = executorService;
 		this.deviceMacReferenceMap = deviceMacReferenceMap;
 		this.use16BitMode = use16BitMode;
 	}
@@ -58,5 +66,6 @@ public class DeviceMacReaderModule implements Module {
 
 		binder.bind(Boolean.class).annotatedWith(Names.named("use16BitMode")).toInstance(use16BitMode);
 		binder.bind(DeviceMacReader.class).to(DeviceMacReaderImpl.class);
+		binder.bind(ExecutorService.class).toInstance(executorService);
 	}
 }

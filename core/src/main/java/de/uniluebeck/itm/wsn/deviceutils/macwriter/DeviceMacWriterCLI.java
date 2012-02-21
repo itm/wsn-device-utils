@@ -123,10 +123,11 @@ public class DeviceMacWriterCLI {
 		}
 		);
 
-		final Injector injector = Guice.createInjector(new DeviceUtilsModule());
+		final ExecutorService executorService = Executors.newCachedThreadPool(
+				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter %d").build()
+		);
 
-		final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter %d").build();
-		final ExecutorService executorService = Executors.newCachedThreadPool(threadFactory);
+		final Injector injector = Guice.createInjector(new DeviceUtilsModule(executorService, null));
 		final Device device = injector.getInstance(DeviceFactory.class).create(executorService, deviceType, configuration);
 		
 		device.connect(port);

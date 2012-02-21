@@ -95,16 +95,12 @@ public class DeviceObserverCLI {
 			printUsageAndExit(DeviceObserverCLI.class, options, 1);
 		}
 
+		final ExecutorService executorService = Executors.newCachedThreadPool(
+				new ThreadFactoryBuilder().setNameFormat("DeviceObserver %d").build()
+		);
+		
 		final DeviceObserver deviceObserver = Guice
-				.createInjector(
-						new DeviceUtilsModule(deviceMacReferenceMap),
-						new AbstractModule() {
-							@Override
-							protected void configure() {
-								bind(ExecutorService.class).toInstance(Executors.newCachedThreadPool());
-							}
-						}
-				)
+				.createInjector(new DeviceUtilsModule(executorService, deviceMacReferenceMap))
 				.getInstance(DeviceObserver.class);
 
 		deviceObserver.addListener(new DeviceObserverListener() {
@@ -114,7 +110,7 @@ public class DeviceObserverCLI {
 			}
 		});
 
-		final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DeviceObserver %d").build();
+		final ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("DeviceObserverScheduler %d").build();
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, threadFactory);
 		scheduler.scheduleAtFixedRate(deviceObserver, 0, 1, TimeUnit.SECONDS);
 	}
