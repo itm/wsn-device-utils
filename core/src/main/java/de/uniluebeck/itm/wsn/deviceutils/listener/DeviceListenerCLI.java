@@ -26,11 +26,13 @@ package de.uniluebeck.itm.wsn.deviceutils.listener;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 import org.apache.commons.cli.CommandLine;
@@ -51,6 +53,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
@@ -160,15 +163,15 @@ public class DeviceListenerCLI {
 				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
 		);
 
-		final Device deviceAsync = factory.create(executorService, deviceType, configuration);
+		final Device device = factory.create(executorService, deviceType, configuration);
 
-		deviceAsync.connect(port);
-		if (!deviceAsync.isConnected()) {
+		device.connect(port);
+		if (!device.isConnected()) {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final InputStream inputStream = deviceAsync.getInputStream();
-		final OutputStream outputStream = deviceAsync.getOutputStream();
+		final InputStream inputStream = device.getInputStream();
+		final OutputStream outputStream = device.getOutputStream();
 
 		final ClientBootstrap bootstrap = new ClientBootstrap(new IOStreamChannelFactory(executorService));
 
@@ -196,6 +199,48 @@ public class DeviceListenerCLI {
 
 		// Wait until the connection is made successfully.
 		connectFuture.awaitUninterruptibly().getChannel();
+
+		while (!Thread.interrupted()) {
+
+			try {
+
+				BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+				String line = stdin.readLine();
+				byte[] bytes = StringUtils.fromStringToByteArray(line);
+				final long start = System.currentTimeMillis();
+				device.send(bytes, 1000, new OperationCallback<Void>() {
+					@Override
+					public void onExecute() {
+						log.trace("DeviceListenerCLI.onExecute()");
+					}
+
+					@Override
+					public void onSuccess(final Void result) {
+						log.trace("DeviceListenerCLI.onSuccess() -> {} ms", (System.currentTimeMillis() - start));
+					}
+
+					@Override
+					public void onCancel() {
+						log.trace("DeviceListenerCLI.onCancel()");
+					}
+
+					@Override
+					public void onFailure(final Throwable throwable) {
+						log.trace("DeviceListenerCLI.onFailure({})", throwable.getMessage());
+					}
+
+					@Override
+					public void onProgressChange(final float fraction) {
+						log.trace("DeviceListenerCLI.onProgressChange({})", fraction);
+					}
+				}
+				);
+
+			} catch (IOException e) {
+				log.error("{}", e);
+				System.exit(1);
+			}
+		}
 
 	}
 
