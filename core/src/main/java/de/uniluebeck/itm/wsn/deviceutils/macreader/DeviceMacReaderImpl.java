@@ -29,8 +29,8 @@ import com.google.inject.name.Named;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.exception.PortNotFoundException;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallbackAdapter;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationListener;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationAdapter;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
 import org.slf4j.Logger;
@@ -66,9 +66,9 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 		final DeviceType deviceType = DeviceType.fromString(deviceTypeString);
 
 		switch (deviceType) {
-			case MOCK:
-				return readMacFromDevice(port, deviceType);
 			case ISENSE:
+				return readMacFromDevice(port, deviceType);
+			case MOCK:
 				return readMacFromDevice(port, deviceType);
 			case PACEMATE:
 				return readMacFromDevice(port, deviceType);
@@ -94,7 +94,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 		final Device device = deviceFactory.create(executorService, deviceType);
 		try {
 			tryToConnect(device, port);
-			final OperationCallback<MacAddress> callback = new OperationCallbackAdapter<MacAddress>() {
+			final OperationListener<MacAddress> callback = new OperationAdapter<MacAddress>() {
 				private int lastProgress = -1;
 
 				@Override

@@ -32,7 +32,6 @@ import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
 import org.apache.commons.cli.CommandLine;
@@ -53,7 +52,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
@@ -204,37 +202,8 @@ public class DeviceListenerCLI {
 
 			try {
 
-				BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-				String line = stdin.readLine();
-				byte[] bytes = StringUtils.fromStringToByteArray(line);
-				final long start = System.currentTimeMillis();
-				device.send(bytes, 1000, new OperationCallback<Void>() {
-					@Override
-					public void onExecute() {
-						log.trace("DeviceListenerCLI.onExecute()");
-					}
-
-					@Override
-					public void onSuccess(final Void result) {
-						log.trace("DeviceListenerCLI.onSuccess() -> {} ms", (System.currentTimeMillis() - start));
-					}
-
-					@Override
-					public void onCancel() {
-						log.trace("DeviceListenerCLI.onCancel()");
-					}
-
-					@Override
-					public void onFailure(final Throwable throwable) {
-						log.trace("DeviceListenerCLI.onFailure({})", throwable.getMessage());
-					}
-
-					@Override
-					public void onProgressChange(final float fraction) {
-						log.trace("DeviceListenerCLI.onProgressChange({})", fraction);
-					}
-				}
-				);
+				BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+				device.getOutputStream().write(StringUtils.fromStringToByteArray(in.readLine()));
 
 			} catch (IOException e) {
 				log.error("{}", e);

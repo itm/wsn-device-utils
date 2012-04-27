@@ -33,7 +33,8 @@ import de.uniluebeck.itm.tr.util.ExecutorUtils;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationListener;
+import de.uniluebeck.itm.wsn.drivers.core.operation.StateChangedEvent;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -124,7 +125,7 @@ public class DeviceFlasherCLI {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		OperationCallback<Void> callback = new OperationCallback<Void>() {
+		OperationListener<Void> callback = new OperationListener<Void>() {
 			private int lastProgress = -1;
 
 			@Override
@@ -144,6 +145,16 @@ public class DeviceFlasherCLI {
 			@Override
 			public void onFailure(Throwable throwable) {
 				log.error("Flashing node failed with Exception: " + throwable, throwable);
+			}
+
+			@Override
+			public void beforeStateChanged(final StateChangedEvent<Void> stateChangedEvent) {
+				log.info("Operation state about to change: {}", stateChangedEvent);
+			}
+
+			@Override
+			public void afterStateChanged(final StateChangedEvent<Void> stateChangedEvent) {
+				log.info("Operation state changed: {}", stateChangedEvent);
 			}
 
 			@Override

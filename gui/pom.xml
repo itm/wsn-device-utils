@@ -33,7 +33,7 @@
 		<relativePath>../</relativePath>
 	</parent>
 
-	<artifactId>wsn-device-utils-gui</artifactId>
+	<artifactId>gui</artifactId>
 	<packaging>jar</packaging>
 	<name>WSN Device Utils :: GUI</name>
 	

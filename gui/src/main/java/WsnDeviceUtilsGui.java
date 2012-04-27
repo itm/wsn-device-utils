@@ -12,9 +12,10 @@ import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceInfo;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationAdapter;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
 import org.apache.log4j.Level;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -39,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class WsnDeviceUtilsGui {
 
 	static {
-		Logging.setLoggingDefaults(Level.DEBUG);
+		Logging.setLoggingDefaults(Level.TRACE);
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(WsnDeviceUtilsGui.class);
@@ -75,9 +76,10 @@ public class WsnDeviceUtilsGui {
 		deviceObserver.updateState();
 		ImmutableMap<String, DeviceInfo> currentState = deviceObserver.getCurrentState();
 		Object[] devicePorts = currentState.keySet().toArray();
-		Object[] items = new String[devicePorts.length + 1];
+		Object[] items = new String[devicePorts.length + 2];
 		items[0] = "";
-		System.arraycopy(devicePorts, 0, items, 1, devicePorts.length);
+		items[1] = "Mock Device";
+		System.arraycopy(devicePorts, 0, items, 2, devicePorts.length);
 		devicePane.selectionComboBox.setModel(new DefaultComboBoxModel(items));
 
 		if (items.length > 0) {
@@ -89,7 +91,11 @@ public class WsnDeviceUtilsGui {
 			public void actionPerformed(final ActionEvent e) {
 				String devicePort = (String) devicePane.selectionComboBox.getSelectedItem();
 				if (devicePort != null && !"".equals(devicePort)) {
-					connect(devicePort);
+					if ("Mock Device".equals(devicePort)) {
+						connect(DeviceType.MOCK.toString(), devicePort);
+					} else {
+						connect(getDeviceType(devicePort), devicePort);
+					}
 				} else {
 					disconnect();
 				}
@@ -136,7 +142,7 @@ public class WsnDeviceUtilsGui {
 						return;
 					}
 
-					device.program(selectedFileBytes, 120000, new DevicePaneOperationCallback<Void>(devicePane));
+					device.program(selectedFileBytes, 120000, new DevicePaneOperationListener<Void>(devicePane));
 				}
 			}
 		}
@@ -145,7 +151,7 @@ public class WsnDeviceUtilsGui {
 		devicePane.resetButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
-				device.reset(1000, new DevicePaneOperationCallback<Void>(devicePane));
+				device.reset(1000, new DevicePaneOperationListener<Void>(devicePane));
 			}
 		}
 		);
@@ -153,21 +159,12 @@ public class WsnDeviceUtilsGui {
 		devicePane.readMACButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
-				DevicePaneOperationCallback<MacAddress> callback =
-						new DevicePaneOperationCallback<MacAddress>(devicePane) {
+				DevicePaneOperationListener<MacAddress> callback =
+						new DevicePaneOperationListener<MacAddress>(devicePane) {
 							@Override
 							public void onSuccess(final MacAddress result) {
 								super.onSuccess(result);
 								JOptionPane.showMessageDialog(frame, "MAC address: " + result.toHexString());
-							}
-
-							@Override
-							public void onFailure(final Throwable throwable) {
-								super.onFailure(throwable);
-								log.error("Failed reading MAC address. Reason: {}", throwable.getMessage(), throwable);
-								JOptionPane.showMessageDialog(frame,
-										"Failed reading MAC address. Reason: " + throwable.getMessage()
-								);
 							}
 						};
 				device.readMac(5000, callback);
@@ -185,7 +182,7 @@ public class WsnDeviceUtilsGui {
 				String macAddressString = JOptionPane.showInputDialog("Please enter MAC address to write:");
 				MacAddress macAddress = new MacAddress(macAddressString);
 
-				device.writeMac(macAddress, 120000, new DevicePaneOperationCallback<Void>(devicePane));
+				device.writeMac(macAddress, 120000, new DevicePaneOperationListener<Void>(devicePane));
 			}
 		}
 		);
@@ -195,7 +192,8 @@ public class WsnDeviceUtilsGui {
 			public void actionPerformed(final ActionEvent e) {
 				try {
 					byte[] message = StringUtils.fromStringToByteArray(devicePane.sendTextField.getText());
-					device.send(message, 1000, new DevicePaneOperationCallback<Void>(devicePane));
+					device.getOutputStream().write(message);
+					device.getOutputStream().flush();
 				} catch (Exception e1) {
 					log.warn("Error while parsing message: {}", e1.getMessage(), e1);
 					JOptionPane.showMessageDialog(frame, "Error while parsing message: " + e1.getMessage());
@@ -208,11 +206,11 @@ public class WsnDeviceUtilsGui {
 		frame.setVisible(true);
 	}
 
-	private class DevicePaneOperationCallback<T> implements OperationCallback<T> {
+	private class DevicePaneOperationListener<T> extends OperationAdapter<T> {
 
 		private final DevicePane devicePane;
 
-		private DevicePaneOperationCallback(final DevicePane devicePane) {
+		private DevicePaneOperationListener(final DevicePane devicePane) {
 			this.devicePane = devicePane;
 		}
 
@@ -254,6 +252,8 @@ public class WsnDeviceUtilsGui {
 
 			devicePane.setDeviceControlsEnabled(true);
 			devicePane.selectionComboBox.setEnabled(true);
+
+			JOptionPane.showMessageDialog(frame, "Failed executing operation. Reason: " + throwable);
 		}
 
 		@Override
@@ -262,11 +262,9 @@ public class WsnDeviceUtilsGui {
 		}
 	}
 
-	private void connect(final String devicePort) {
+	private void connect(final String deviceType, final String devicePort) {
 
 		disconnect();
-
-		String deviceType = deviceObserver.getCurrentState().get(devicePort).getType();
 
 		device = deviceFactory.create(executorService, deviceType);
 
@@ -303,11 +301,11 @@ public class WsnDeviceUtilsGui {
 						buffer.readBytes(messageBytes);
 
 						String message = devicePane.replaceNonPrintableCharactersCheckBox.isSelected() ?
-								StringUtils.toPrintableString(messageBytes) + "\n" :
-								(new String(messageBytes) + "\n");
+								StringUtils.toPrintableString(messageBytes) :
+								new String(messageBytes);
 
 						log.debug("Device output: {}", message);
-						devicePane.outputTextArea.append(message);
+						devicePane.outputTextArea.append(message + '\n');
 					}
 				}
 				);
@@ -326,6 +324,10 @@ public class WsnDeviceUtilsGui {
 
 		devicePane.setDeviceControlsEnabled(true);
 		devicePane.setStatusText("Connected to " + deviceType + " device at " + devicePort);
+	}
+
+	private String getDeviceType(final String devicePort) {
+		return deviceObserver.getCurrentState().get(devicePort).getType();
 	}
 
 	private void disconnect() {
