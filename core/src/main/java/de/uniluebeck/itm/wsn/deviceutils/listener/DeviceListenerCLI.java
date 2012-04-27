@@ -26,6 +26,7 @@ package de.uniluebeck.itm.wsn.deviceutils.listener;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
 import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
@@ -160,15 +161,15 @@ public class DeviceListenerCLI {
 				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
 		);
 
-		final Device deviceAsync = factory.create(executorService, deviceType, configuration);
+		final Device device = factory.create(executorService, deviceType, configuration);
 
-		deviceAsync.connect(port);
-		if (!deviceAsync.isConnected()) {
+		device.connect(port);
+		if (!device.isConnected()) {
 			throw new RuntimeException("Connection to device at port \"" + args[1] + "\" could not be established!");
 		}
 
-		final InputStream inputStream = deviceAsync.getInputStream();
-		final OutputStream outputStream = deviceAsync.getOutputStream();
+		final InputStream inputStream = device.getInputStream();
+		final OutputStream outputStream = device.getOutputStream();
 
 		final ClientBootstrap bootstrap = new ClientBootstrap(new IOStreamChannelFactory(executorService));
 
@@ -196,6 +197,19 @@ public class DeviceListenerCLI {
 
 		// Wait until the connection is made successfully.
 		connectFuture.awaitUninterruptibly().getChannel();
+
+		while (!Thread.interrupted()) {
+
+			try {
+
+				BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+				device.getOutputStream().write(StringUtils.fromStringToByteArray(in.readLine()));
+
+			} catch (IOException e) {
+				log.error("{}", e);
+				System.exit(1);
+			}
+		}
 
 	}
 

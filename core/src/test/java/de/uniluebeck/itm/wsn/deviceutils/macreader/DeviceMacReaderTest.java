@@ -7,8 +7,8 @@ import com.google.inject.Module;
 import com.google.inject.name.Names;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
-import de.uniluebeck.itm.wsn.drivers.core.concurrent.OperationFuture;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationCallback;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationFuture;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationListener;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
 import org.junit.Test;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 public class DeviceMacReaderTest {
 
 	private DeviceMacReader deviceMacReader;
-	
+
 	@Mock
 	private ExecutorService executorService;
 
@@ -39,7 +39,7 @@ public class DeviceMacReaderTest {
 
 	@Mock
 	private Device device;
-	
+
 	@Mock
 	private OperationFuture<MacAddress> future;
 
@@ -68,14 +68,15 @@ public class DeviceMacReaderTest {
 				binder.bind(Boolean.class).annotatedWith(Names.named("use16BitMode")).toInstance(use16BitMode);
 				binder.bind(DeviceMacReader.class).to(DeviceMacReaderImpl.class);
 			}
-		});
+		}
+		);
 
 		deviceMacReader = injector.getInstance(DeviceMacReader.class);
-		
+
 		when(deviceFactory.create(executorService, deviceType)).thenReturn(device);
 		doNothing().when(device).connect(port);
 		when(device.isConnected()).thenReturn(true);
-		when(device.readMac(Matchers.anyInt(), Matchers.<OperationCallback<MacAddress>>any())).thenReturn(future);
+		when(device.readMac(Matchers.anyInt(), Matchers.<OperationListener<MacAddress>>any())).thenReturn(future);
 		when(future.get()).thenReturn(device64BitMacAddress);
 	}
 
