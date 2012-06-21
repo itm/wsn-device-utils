@@ -21,12 +21,28 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                *
  **********************************************************************************************************************/
 
-package de.uniluebeck.itm.wsn.deviceutils.listener.writers;
+package de.uniluebeck.itm.wsn.deviceutils.listener;
 
-public interface Writer {
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.MessageEvent;
 
-	public void write(byte[] packet);
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 
-	public void shutdown();
+public class StringWriter extends WriterHandler {
 
+	private final Charset charset;
+
+	public StringWriter(OutputStream out, Charset charset) {
+		super(out);
+		this.charset = charset;
+	}
+
+	@Override
+	public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+		output.write(((ChannelBuffer) e.getMessage()).toString(charset));
+		output.newLine();
+		output.flush();
+	}
 }

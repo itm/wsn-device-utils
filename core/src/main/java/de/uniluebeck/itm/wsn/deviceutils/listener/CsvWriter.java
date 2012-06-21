@@ -21,47 +21,60 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                *
  **********************************************************************************************************************/
 
-package de.uniluebeck.itm.wsn.deviceutils.listener.writers;
+package de.uniluebeck.itm.wsn.deviceutils.listener;
 
+import com.google.common.base.Joiner;
 import de.uniluebeck.itm.tr.util.StringUtils;
-import org.slf4j.LoggerFactory;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.MessageEvent;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 
-public class HumanReadableWriter implements Writer {
-	private final static org.slf4j.Logger log = LoggerFactory.getLogger(HumanReadableWriter.class);
+public class CsvWriter extends WriterHandler {
 
-	private final BufferedWriter output;
+	private final DateTimeFormatter timeFormatter = DateTimeFormat.fullDateTime();
 
-	public HumanReadableWriter(OutputStream out) {
-		this.output = new BufferedWriter(new OutputStreamWriter(out));
+	private final Joiner joiner = Joiner.on(";");
+
+	public CsvWriter(OutputStream out) throws IOException {
+		super(out);
 	}
 
 	@Override
-	public void write(byte[] packet) {
-		try {
-			output.write("String=\"");
-			output.write(StringUtils.replaceNonPrintableAsciiCharacters(new String(packet)));
-			output.write("\", Hex=\"");
-			output.write(StringUtils.toHexString(packet));
-			output.write("\"");
-			output.newLine();
-			output.flush();
-		} catch (IOException e) {
-			log.warn("Unable to write messge:" + e, e);
-		}
+	public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+
+		super.channelConnected(ctx, e);
+
+		this.output.write(
+				joiner.join(
+						"\"Time\"",
+						"\"Content as String\"",
+						"\"Content as Hex-Bytes\"",
+						"\"Unix-Timestamp\""
+				)
+		);
+		this.output.newLine();
 	}
 
 	@Override
-	public void shutdown() {
-		try {
-			output.flush();
-		} catch (IOException e) {
-			log.warn("" + e, e);
-		}
+	public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+		final byte[] packet = getBufferBytes(e);
+		this.output.write(
+				joiner.join(
+						"\"" + timeFormatter.print(new DateTime()) + "\"",
+						"\"" + StringUtils.replaceNonPrintableAsciiCharacters(new String(packet)) + "\"",
+						"\"" + StringUtils.toHexString(packet) + "\"",
+						Long.toString(System.currentTimeMillis() / 1000)
+				)
+		);
+		output.newLine();
+		output.flush();
 	}
+
 
 }

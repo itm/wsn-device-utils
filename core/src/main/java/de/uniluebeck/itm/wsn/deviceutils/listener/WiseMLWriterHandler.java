@@ -21,128 +21,107 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                                *
  **********************************************************************************************************************/
 
-package de.uniluebeck.itm.wsn.deviceutils.listener.writers;
+package de.uniluebeck.itm.wsn.deviceutils.listener;
 
 import org.apache.commons.codec.binary.Base64;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.MessageEvent;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 
-public class WiseMLWriter implements Writer {
-
-	private final static org.slf4j.Logger log = LoggerFactory.getLogger(WiseMLWriter.class);
+public class WiseMLWriterHandler extends WriterHandler {
 
 	private final DateTimeFormatter timeFormatter = DateTimeFormat.fullDateTime();
 
 	private final String nodeUrn;
 
-	private BufferedWriter output;
-
 	private boolean writeHeaderAndFooter;
 
-	private boolean traceOpen = false;
+	private volatile boolean traceOpen = false;
 
-	public WiseMLWriter(OutputStream out, String nodeUrn, boolean writeHeaderAndFooter) {
-		this.output = new BufferedWriter(new OutputStreamWriter(out));
+	public WiseMLWriterHandler(OutputStream out, String nodeUrn, boolean writeHeaderAndFooter) {
+		super(out);
 		this.writeHeaderAndFooter = writeHeaderAndFooter;
 		this.nodeUrn = nodeUrn;
-
-		if (writeHeaderAndFooter)
-			writeHeader();
 	}
 
-	private void writeHeader() {
-		try {
-			output.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-			output.newLine();
-			output.write("<wiseml xmlns=\"http://wisebed.eu/ns/wiseml/1.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://wisebed.eu/ns/wiseml/1.0\" version=\"1.0\">");
-			output.newLine();
-		} catch (IOException e) {
-			log.warn("Unable to write WiseML header:" + e, e);
+	@Override
+	public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+
+		super.channelConnected(ctx, e);
+
+		if (writeHeaderAndFooter) {
+			writeHeader();
 		}
 	}
 
-	private void checkNewTraceStart() throws IOException {
-		if (output == null)
-			return;
+	@Override
+	public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+
+		closeTraceTagIfOpen();
+
+		if (writeHeaderAndFooter) {
+			writeFooter();
+		}
+
+		super.channelDisconnected(ctx, e);
+	}
+
+	@Override
+	public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+
+		openTraceTagIfNotOpenYet();
+
+		ChannelBuffer buffer = (ChannelBuffer) e.getMessage();
+		final byte[] packet = new byte[buffer.readableBytes()];
+		buffer.getBytes(0, packet);
+
+		output.write("\t<timestamp>" + System.currentTimeMillis() + "</timestamp>\n");
+
+		output.write("\t<node id=\"" + nodeUrn + "\">");
+		output.newLine();
+
+		output.write("\t\t<data>" + Base64.encodeBase64String(packet) + "</data>");
+		output.newLine();
+
+		output.write("\t</node>");
+		output.newLine();
+		output.flush();
+	}
+
+	private void writeHeader() throws IOException {
+		output.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+		output.newLine();
+		output.write(
+				"<wiseml xmlns=\"http://wisebed.eu/ns/wiseml/1.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://wisebed.eu/ns/wiseml/1.0\" version=\"1.0\">"
+		);
+		output.newLine();
+	}
+
+	private void openTraceTagIfNotOpenYet() throws IOException {
 
 		if (!traceOpen) {
-			checkTraceClose();
 			output.write("<trace id=\"" + timeFormatter.print(System.currentTimeMillis()) + "\">\n");
 			traceOpen = true;
 		}
-
 	}
 
-	private void checkTraceClose() {
-		if (output == null)
-			return;
+	private void closeTraceTagIfOpen() throws IOException {
 
 		if (traceOpen) {
-			try {
-				output.write("</trace>\n");
-			} catch (IOException e) {
-				log.debug(" :" + e, e);
-			}
+			output.write("</trace>\n");
+			traceOpen = false;
 		}
 	}
 
-	private void writeFooter() {
-		try {
-			output.write("</wiseml>");
-			output.newLine();
-		} catch (IOException e) {
-			log.warn("Unable to write WiseML header:" + e, e);
-		}
+	private void writeFooter() throws IOException {
+
+		output.write("</wiseml>");
+		output.newLine();
 	}
-
-	@Override
-	public void write(byte[] packet) {
-		if (output == null)
-			return;
-
-		try {
-			checkNewTraceStart();
-
-			output.write("\t<timestamp>" + System.currentTimeMillis() + "</timestamp>\n");
-
-			output.write("\t<node id=\"" + nodeUrn + "\">");
-			output.newLine();
-
-			output.write("\t\t<data>" + Base64.encodeBase64String(packet) + "</data>");
-			output.newLine();
-
-			output.write("\t</node>");
-			output.newLine();
-			output.flush();
-
-		} catch (IOException e) {
-			log.warn("Unable to write packet: " + e, e);
-		}
-	}
-
-	@Override
-	public void shutdown() {
-		if (output == null)
-			return;
-
-		checkTraceClose();
-
-		if (writeHeaderAndFooter)
-			writeFooter();
-
-		try {
-			output.flush();
-		} catch (IOException e) {
-			log.debug(" :" + e, e);
-
-		}
-		output = null;
-	}
-
 }

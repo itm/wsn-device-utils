@@ -27,10 +27,6 @@ import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.CsvWriter;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.HumanReadableWriter;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.WiseMLWriter;
-import de.uniluebeck.itm.wsn.deviceutils.listener.writers.Writer;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
@@ -48,6 +44,7 @@ import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +53,7 @@ import java.util.concurrent.Executors;
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
+import static org.jboss.netty.channel.Channels.pipeline;
 
 public class DeviceListenerCLI {
 
@@ -77,7 +75,7 @@ public class DeviceListenerCLI {
 		Map<String, String> configuration = newHashMap();
 
 		OutputStream outStream = System.out;
-		Writer outWriter = null;
+		WriterHandler writerHandler = null;
 
 		try {
 
@@ -122,9 +120,17 @@ public class DeviceListenerCLI {
 				String format = line.getOptionValue('f');
 
 				if ("csv".equals(format)) {
-					outWriter = new CsvWriter(outStream);
+					writerHandler = new CsvWriter(outStream);
 				} else if ("wiseml".equals(format)) {
-					outWriter = new WiseMLWriter(outStream, "node at " + line.getOptionValue('p'), true);
+					writerHandler = new WiseMLWriterHandler(outStream, "node at " + line.getOptionValue('p'), true);
+				} else if ("hex".equals(format)) {
+					writerHandler = new HexWriter(outStream);
+				} else if ("human".equals(format)) {
+					writerHandler = new HumanReadableWriter(outStream);
+				} else if ("utf8".equals(format) || "UTF-8".equals(format)) {
+					writerHandler = new StringWriter(outStream, Charset.forName("UTF-8"));
+				} else if ("iso".equals(format) || "ISO-8859-1".equals(format)) {
+					writerHandler = new StringWriter(outStream, Charset.forName("ISO-8859-1"));
 				} else {
 					throw new Exception("Unknown format " + format);
 				}
@@ -132,7 +138,7 @@ public class DeviceListenerCLI {
 				log.info("Using format {}", format);
 
 			} else {
-				outWriter = new HumanReadableWriter(outStream);
+				writerHandler = new StringWriter(outStream, Charset.forName("US-ASCII"));
 			}
 
 		} catch (Exception e) {
@@ -140,22 +146,9 @@ public class DeviceListenerCLI {
 			printUsageAndExit(DeviceListenerCLI.class, options, 1);
 		}
 
-		if (outWriter == null) {
+		if (writerHandler == null) {
 			throw new RuntimeException("This should not happen!");
 		}
-
-		final Writer finalOutWriter = outWriter;
-		Runtime.getRuntime().addShutdownHook(new Thread(DeviceListenerCLI.class.getName() + "-ShutdownThread") {
-			@Override
-			public void run() {
-				try {
-					finalOutWriter.shutdown();
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
-		);
 
 		final ExecutorService executorService = Executors.newCachedThreadPool(
 				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
@@ -173,37 +166,46 @@ public class DeviceListenerCLI {
 
 		final ClientBootstrap bootstrap = new ClientBootstrap(new IOStreamChannelFactory(executorService));
 
+		final WriterHandler finalWriterHandler = writerHandler;
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			@Override
 			public ChannelPipeline getPipeline() throws Exception {
-				DefaultChannelPipeline pipeline = new DefaultChannelPipeline();
-				pipeline.addLast("loggingHandler", new SimpleChannelHandler() {
-					@Override
-					public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e)
-							throws Exception {
-						final ChannelBuffer message = (ChannelBuffer) e.getMessage();
-						byte[] messageBytes = new byte[message.readableBytes()];
-						message.readBytes(messageBytes);
-						finalOutWriter.write(messageBytes);
-					}
-				}
-				);
-				return pipeline;
+				return pipeline(finalWriterHandler);
 			}
-		}
-		);
+		});
 
 		// Make a new connection.
 		ChannelFuture connectFuture = bootstrap.connect(new IOStreamAddress(inputStream, outputStream));
 
 		// Wait until the connection is made successfully.
-		connectFuture.awaitUninterruptibly().getChannel();
+		final Channel channel = connectFuture.awaitUninterruptibly().getChannel();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(DeviceListenerCLI.class.getName() + "-ShutdownThread") {
+			@Override
+			public void run() {
+				try {
+					channel.close();
+				} catch (Exception e) {
+					log.error("Exception while closing channel to device: {}", e, e);
+				}
+			}
+		}
+		);
 
 		while (!Thread.interrupted()) {
 
 			try {
 
 				BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-				device.getOutputStream().write(StringUtils.fromStringToByteArray(in.readLine()));
+				final byte[] cmdBytes = in.readLine().getBytes();
+				final byte[] bytes = new byte[cmdBytes.length + 1];
+				System.arraycopy(cmdBytes, 0, bytes, 0, cmdBytes.length);
+				bytes[cmdBytes.length] = 0x0a; // LF
+
+				device.getOutputStream().write(bytes);
+				System.out.println("SENT " + bytes.length + " bytes: " + StringUtils.toHexString(bytes));
+				device.getOutputStream().flush();
+				// device.getOutputStream().write(StringUtils.fromStringToByteArray(in.readLine()));
 
 			} catch (IOException e) {
 				log.error("{}", e);
