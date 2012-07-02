@@ -187,19 +187,6 @@ public class DeviceListenerCLI {
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 			public ChannelPipeline getPipeline() throws Exception {
 				DefaultChannelPipeline pipeline = new DefaultChannelPipeline();
-
-				final List<Tuple<String, ChannelHandler>> decoders = new DleStxEtxFramingDecoderFactory().create(
-						"frameDecoder",
-						HashMultimap.<String, String>create()
-				);
-				pipeline.addLast("frameDecoder", decoders.get(0).getSecond());
-
-				final List<Tuple<String, ChannelHandler>> encoders = new DleStxEtxFramingEncoderFactory().create(
-						"frameEncoder",
-						HashMultimap.<String, String>create()
-				);
-				pipeline.addLast("frameEncoder", encoders.get(0).getSecond());
-
 				pipeline.addLast("loggingHandler", new SimpleChannelHandler() {
 					@Override
 					public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e)
