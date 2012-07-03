@@ -41,6 +41,9 @@ public class StringWriter extends WriterHandler {
 
 	@Override
 	public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+
+		super.messageReceived(ctx, e);
+
 		output.write(((ChannelBuffer) e.getMessage()).toString(charset));
 		output.newLine();
 		output.flush();

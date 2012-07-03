@@ -24,9 +24,15 @@
 package de.uniluebeck.itm.wsn.deviceutils.listener;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.netty.handlerstack.HandlerFactoryRegistry;
+import de.uniluebeck.itm.netty.handlerstack.protocolcollection.ProtocolCollection;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
+import de.uniluebeck.itm.tr.util.Tuple;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
@@ -43,13 +49,16 @@ import org.jboss.netty.channel.iostream.IOStreamAddress;
 import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
@@ -76,6 +85,7 @@ public class DeviceListenerCLI {
 
 		OutputStream outStream = System.out;
 		WriterHandler writerHandler = null;
+		@Nonnull List<Tuple<String, ChannelHandler>> handlers = newArrayList();
 
 		try {
 
@@ -115,6 +125,27 @@ public class DeviceListenerCLI {
 				outStream = new FileOutputStream(filename);
 			}
 
+			if (line.hasOption('e')) {
+
+				final String handlerNamesString = line.getOptionValue('e');
+
+				Iterable<String> handlerNames = Splitter.on(",")
+						.omitEmptyStrings()
+						.trimResults()
+						.split(handlerNamesString);
+
+				List<Tuple<String, Multimap<String, String>>> config = newArrayList();
+				for (String handlerName : handlerNames) {
+					config.add(new Tuple<String, Multimap<String, String>>(handlerName, HashMultimap.<String, String>create()));
+				}
+
+				final HandlerFactoryRegistry registry = new HandlerFactoryRegistry();
+				ProtocolCollection.registerProtocols(registry);
+
+				handlers = registry.create(config);
+
+			}
+
 			if (line.hasOption('f')) {
 
 				String format = line.getOptionValue('f');
@@ -142,7 +173,7 @@ public class DeviceListenerCLI {
 			}
 
 		} catch (Exception e) {
-			log.error("Invalid command line: " + e);
+			log.error("Invalid command line: {}", e);
 			printUsageAndExit(DeviceListenerCLI.class, options, 1);
 		}
 
@@ -167,10 +198,16 @@ public class DeviceListenerCLI {
 		final ClientBootstrap bootstrap = new ClientBootstrap(new IOStreamChannelFactory(executorService));
 
 		final WriterHandler finalWriterHandler = writerHandler;
+		final List<Tuple<String, ChannelHandler>> finalHandlers = handlers;
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 			@Override
 			public ChannelPipeline getPipeline() throws Exception {
-				return pipeline(finalWriterHandler);
+				final ChannelPipeline pipeline = pipeline();
+				for (Tuple<String, ChannelHandler> handler : finalHandlers) {
+					pipeline.addLast(handler.getFirst(), handler.getSecond());
+				}
+				pipeline.addLast("finalWriterHandler", finalWriterHandler);
+				return pipeline;
 			}
 		});
 
@@ -230,6 +267,7 @@ public class DeviceListenerCLI {
 				"Optional: file name of a configuration file containing key value pairs to configure the device"
 		);
 
+		options.addOption("e", "channelpipeline", true, "Optional: comma-separated list of channel pipeline handler names");
 		options.addOption("f", "format", true, "Optional: output format, options: csv, wiseml");
 		options.addOption("o", "outfile", true, "Optional: redirect output to file");
 		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");

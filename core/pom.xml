@@ -55,6 +55,10 @@
 			<groupId>de.uniluebeck.itm.itmutils</groupId>
 			<artifactId>itmutils</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>de.uniluebeck.itm.netty.handlerstack</groupId>
+			<artifactId>protocol-collection</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>com.google.code.findbugs</groupId>

@@ -38,6 +38,9 @@ public class HexWriter extends WriterHandler {
 
 	@Override
 	public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+
+		super.messageReceived(ctx, e);
+
 		output.write(StringUtils.toHexString(getBufferBytes(e)));
 		output.newLine();
 		output.flush();

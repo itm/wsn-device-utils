@@ -63,6 +63,9 @@ public class CsvWriter extends WriterHandler {
 
 	@Override
 	public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+
+		super.messageReceived(ctx, e);
+
 		final byte[] packet = getBufferBytes(e);
 		this.output.write(
 				joiner.join(

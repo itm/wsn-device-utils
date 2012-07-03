@@ -75,6 +75,8 @@ public class WiseMLWriterHandler extends WriterHandler {
 	@Override
 	public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
 
+		super.messageReceived(ctx, e);
+
 		openTraceTagIfNotOpenYet();
 
 		ChannelBuffer buffer = (ChannelBuffer) e.getMessage();
