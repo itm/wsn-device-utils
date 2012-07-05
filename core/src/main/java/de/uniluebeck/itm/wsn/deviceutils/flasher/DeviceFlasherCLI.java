@@ -118,7 +118,7 @@ public class DeviceFlasherCLI {
 		);
 
 		final Injector injector = Guice.createInjector(new DeviceUtilsModule(executorService, null));
-		final Device device = injector.getInstance(DeviceFactory.class).create(executorService, deviceType);
+		final Device device = injector.getInstance(DeviceFactory.class).create(executorService, deviceType, configuration);
 
 		device.connect(port);
 		if (!device.isConnected()) {
