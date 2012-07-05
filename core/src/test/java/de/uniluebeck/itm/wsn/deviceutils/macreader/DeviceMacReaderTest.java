@@ -73,7 +73,7 @@ public class DeviceMacReaderTest {
 
 		deviceMacReader = injector.getInstance(DeviceMacReader.class);
 
-		when(deviceFactory.create(executorService, deviceType)).thenReturn(device);
+		when(deviceFactory.create(executorService, deviceType, null)).thenReturn(device);
 		doNothing().when(device).connect(port);
 		when(device.isConnected()).thenReturn(true);
 		when(device.readMac(Matchers.anyInt(), Matchers.<OperationListener<MacAddress>>any())).thenReturn(future);
@@ -83,14 +83,14 @@ public class DeviceMacReaderTest {
 	@Test
 	public void test16BitMode() throws Exception {
 		setUp(true);
-		final MacAddress macAddress = deviceMacReader.readMac(port, deviceTypeString, null);
+		final MacAddress macAddress = deviceMacReader.readMac(port, deviceTypeString, null, null);
 		assertEquals(device16BitMacAddress, macAddress);
 	}
 
 	@Test
 	public void test64BitMode() throws Exception {
 		setUp(false);
-		final MacAddress macAddress = deviceMacReader.readMac(port, deviceTypeString, null);
+		final MacAddress macAddress = deviceMacReader.readMac(port, deviceTypeString, null, null);
 		assertEquals(device64BitMacAddress, macAddress);
 	}
 }

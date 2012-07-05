@@ -26,9 +26,13 @@ package de.uniluebeck.itm.wsn.deviceutils.macreader;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 
 public interface DeviceMacReader {
 
-	MacAddress readMac(final String port, final String deviceType, @Nullable final String reference) throws Exception;
+	MacAddress readMac(final String port,
+					   final String deviceType,
+					   @Nullable Map<String, String> configuration,
+					   @Nullable final String reference) throws Exception;
 
 }

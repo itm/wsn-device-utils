@@ -148,7 +148,7 @@ public class DeviceMacReaderCLI {
 
 		try {
 
-			final MacAddress macAddress = deviceMacReader.readMac(port, deviceType, reference);
+			final MacAddress macAddress = deviceMacReader.readMac(port, deviceType, configuration, reference);
 			log.info("Read MAC address of {} device at port {}: {}", new Object[]{deviceType, port, macAddress});
 			System.out.println(macAddress.toHexString());
 			System.exit(0);

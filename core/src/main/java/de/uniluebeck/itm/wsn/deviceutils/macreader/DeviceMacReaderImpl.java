@@ -29,14 +29,15 @@ import com.google.inject.name.Named;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.exception.PortNotFoundException;
-import de.uniluebeck.itm.wsn.drivers.core.operation.OperationListener;
 import de.uniluebeck.itm.wsn.drivers.core.operation.OperationAdapter;
+import de.uniluebeck.itm.wsn.drivers.core.operation.OperationListener;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 public class DeviceMacReaderImpl implements DeviceMacReader {
@@ -60,18 +61,20 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 	private Boolean use16BitMode = true;
 
 	@Override
-	public MacAddress readMac(final String port, final String deviceTypeString, @Nullable final String reference)
-			throws Exception {
+	public MacAddress readMac(final String port,
+							  final String deviceTypeString,
+							  @Nullable Map<String, String> configuration,
+							  @Nullable final String reference) throws Exception {
 
 		final DeviceType deviceType = DeviceType.fromString(deviceTypeString);
 
 		switch (deviceType) {
 			case ISENSE:
-				return readMacFromDevice(port, deviceType);
+				return readMacFromDevice(port, deviceType, configuration);
 			case MOCK:
-				return readMacFromDevice(port, deviceType);
+				return readMacFromDevice(port, deviceType, configuration);
 			case PACEMATE:
-				return readMacFromDevice(port, deviceType);
+				return readMacFromDevice(port, deviceType, configuration);
 			case TELOSB:
 				return readMacFromMap(reference);
 			default:
@@ -90,10 +93,15 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 		return referenceToMacMap.get(reference);
 	}
 
-	private MacAddress readMacFromDevice(final String port, final DeviceType deviceType) throws Exception {
-		final Device device = deviceFactory.create(executorService, deviceType);
+	private MacAddress readMacFromDevice(final String port, final DeviceType deviceType,
+										 @Nullable Map<String, String> configuration) throws Exception {
+
+		final Device device = deviceFactory.create(executorService, deviceType, configuration);
+
 		try {
+
 			tryToConnect(device, port);
+
 			final OperationListener<MacAddress> callback = new OperationAdapter<MacAddress>() {
 				private int lastProgress = -1;
 
@@ -106,6 +114,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 					}
 				}
 			};
+
 			final MacAddress macAddress = device.readMac(TIMEOUT, callback).get();
 
 			if (use16BitMode) {

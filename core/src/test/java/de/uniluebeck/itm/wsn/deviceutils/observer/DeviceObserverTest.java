@@ -220,7 +220,7 @@ public class DeviceObserverTest {
 
 		setObserverStateForCsvRows();
 
-		when(deviceMacReader.readMac(device1Info.getPort(), device1Info.getType(), device1Info.getReference()))
+		when(deviceMacReader.readMac(device1Info.getPort(), device1Info.getType(), null, device1Info.getReference()))
 				.thenReturn(device1MacAddress);
 
 		final ImmutableList<DeviceEvent> events = getObserverEventsForCsvRows(null, device1Csv);
@@ -259,7 +259,7 @@ public class DeviceObserverTest {
 		MacAddress expectedMacAddress = new MacAddress("0x0123");
 
 		setCsvProviderState(device1Csv);
-		when(deviceMacReader.readMac(device1Info.getPort(), device1Info.getType(), device1Info.getReference()))
+		when(deviceMacReader.readMac(device1Info.getPort(), device1Info.getType(), null, device1Info.getReference()))
 				.thenReturn(expectedMacAddress);
 
 		deviceObserver.updateState();
