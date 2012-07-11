@@ -35,9 +35,9 @@ public class DevicePane {
 
 	public JCheckBox wrapLinesCheckBox;
 
-	public JCheckBox replaceNonPrintableCharactersCheckBox;
-
 	public JLabel deviceOutputLabel;
+
+	public JComboBox outputMode;
 
 	public void setDeviceControlsEnabled(boolean enabled) {
 		programButton.setEnabled(enabled);
@@ -220,19 +220,22 @@ public class DevicePane {
 						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
 				)
 		);
-		replaceNonPrintableCharactersCheckBox = new JCheckBox();
-		replaceNonPrintableCharactersCheckBox.setSelected(true);
-		replaceNonPrintableCharactersCheckBox.setText("Replace non-printable Characters");
-		panel4.add(replaceNonPrintableCharactersCheckBox,
-				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
-						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
-				)
-		);
 		final Spacer spacer1 = new Spacer();
 		panel4.add(spacer1,
 				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false
+				)
+		);
+		outputMode = new JComboBox();
+		final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
+		defaultComboBoxModel1.addElement("ASCII");
+		defaultComboBoxModel1.addElement("Hex-String");
+		defaultComboBoxModel1.addElement("Replace non-printable ASCII characters");
+		outputMode.setModel(defaultComboBoxModel1);
+		panel4.add(outputMode,
+				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
+						false
 				)
 		);
 		final JSeparator separator1 = new JSeparator();

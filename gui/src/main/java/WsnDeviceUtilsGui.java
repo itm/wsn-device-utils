@@ -14,7 +14,7 @@ import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.operation.OperationAdapter;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryModule;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
 import org.apache.log4j.Level;
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -53,7 +53,9 @@ public class WsnDeviceUtilsGui {
 
 	private Device device;
 
-	private DeviceFactory deviceFactory = new DeviceFactoryImpl();
+	private DeviceFactory deviceFactory = Guice
+			.createInjector(new DeviceFactoryModule())
+			.getInstance(DeviceFactory.class);
 
 	private final ExecutorService executorService;
 
@@ -300,9 +302,18 @@ public class WsnDeviceUtilsGui {
 						byte[] messageBytes = new byte[buffer.readableBytes()];
 						buffer.readBytes(messageBytes);
 
-						String message = devicePane.replaceNonPrintableCharactersCheckBox.isSelected() ?
-								StringUtils.toPrintableString(messageBytes) :
-								new String(messageBytes);
+						final String outputMode = (String) devicePane.outputMode.getSelectedItem();
+						final String message;
+
+						if ("ASCII".equals(outputMode)) {
+							message = new String(messageBytes);
+						} else if ("Hex-String".equals(outputMode)) {
+							message = StringUtils.toHexString(messageBytes);
+						} else if ("Replace non-printable ASCII characters".equals(outputMode)) {
+							message = StringUtils.toPrintableString(messageBytes);
+						} else {
+							throw new RuntimeException();
+						}
 
 						log.debug("Device output: {}", message);
 						devicePane.outputTextArea.append(message + '\n');
