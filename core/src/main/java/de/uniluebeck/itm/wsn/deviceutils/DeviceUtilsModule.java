@@ -27,8 +27,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReaderModule;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryModule;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ExecutorService;
@@ -40,12 +39,14 @@ public class DeviceUtilsModule implements Module {
 	private final DeviceMacReferenceMap deviceMacReferenceMap;
 
 	private final boolean use16BitMode;
-	
-	public DeviceUtilsModule(final ExecutorService executorService, @Nullable DeviceMacReferenceMap deviceMacReferenceMap) {
+
+	public DeviceUtilsModule(final ExecutorService executorService,
+							 @Nullable DeviceMacReferenceMap deviceMacReferenceMap) {
 		this(executorService, deviceMacReferenceMap, true);
 	}
 
-	public DeviceUtilsModule(final ExecutorService executorService, @Nullable DeviceMacReferenceMap deviceMacReferenceMap, boolean use16BitMode) {
+	public DeviceUtilsModule(final ExecutorService executorService,
+							 @Nullable DeviceMacReferenceMap deviceMacReferenceMap, boolean use16BitMode) {
 		this.executorService = executorService;
 		this.deviceMacReferenceMap = deviceMacReferenceMap;
 		this.use16BitMode = use16BitMode;
@@ -54,6 +55,6 @@ public class DeviceUtilsModule implements Module {
 	@Override
 	public void configure(final Binder binder) {
 		binder.install(new DeviceMacReaderModule(executorService, deviceMacReferenceMap, use16BitMode));
-		binder.bind(DeviceFactory.class).to(DeviceFactoryImpl.class);
+		binder.install(new DeviceFactoryModule());
 	}
 }

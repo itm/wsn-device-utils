@@ -28,6 +28,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.Guice;
 import de.uniluebeck.itm.netty.handlerstack.HandlerFactoryRegistry;
 import de.uniluebeck.itm.netty.handlerstack.protocolcollection.ProtocolCollection;
 import de.uniluebeck.itm.tr.util.Logging;
@@ -35,7 +36,7 @@ import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.tr.util.Tuple;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
-import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryImpl;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
@@ -43,7 +44,6 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.iostream.IOStreamAddress;
 import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
@@ -70,7 +70,9 @@ public class DeviceListenerCLI {
 
 	private final static org.slf4j.Logger log = LoggerFactory.getLogger(DeviceListenerCLI.class);
 
-	private static final DeviceFactory factory = new DeviceFactoryImpl();
+	private static final DeviceFactory deviceFactory = Guice
+			.createInjector(new DeviceFactoryModule())
+			.getInstance(DeviceFactory.class);
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 
@@ -136,7 +138,10 @@ public class DeviceListenerCLI {
 
 				List<Tuple<String, Multimap<String, String>>> config = newArrayList();
 				for (String handlerName : handlerNames) {
-					config.add(new Tuple<String, Multimap<String, String>>(handlerName, HashMultimap.<String, String>create()));
+					config.add(new Tuple<String, Multimap<String, String>>(handlerName,
+							HashMultimap.<String, String>create()
+					)
+					);
 				}
 
 				final HandlerFactoryRegistry registry = new HandlerFactoryRegistry();
@@ -185,7 +190,7 @@ public class DeviceListenerCLI {
 				new ThreadFactoryBuilder().setNameFormat("DeviceListener-Thread %d").build()
 		);
 
-		final Device device = factory.create(executorService, deviceType, configuration);
+		final Device device = deviceFactory.create(executorService, deviceType, configuration);
 
 		device.connect(port);
 		if (!device.isConnected()) {
@@ -209,7 +214,8 @@ public class DeviceListenerCLI {
 				pipeline.addLast("finalWriterHandler", finalWriterHandler);
 				return pipeline;
 			}
-		});
+		}
+		);
 
 		// Make a new connection.
 		ChannelFuture connectFuture = bootstrap.connect(new IOStreamAddress(inputStream, outputStream));
@@ -267,7 +273,9 @@ public class DeviceListenerCLI {
 				"Optional: file name of a configuration file containing key value pairs to configure the device"
 		);
 
-		options.addOption("e", "channelpipeline", true, "Optional: comma-separated list of channel pipeline handler names");
+		options.addOption("e", "channelpipeline", true,
+				"Optional: comma-separated list of channel pipeline handler names"
+		);
 		options.addOption("f", "format", true, "Optional: output format, options: csv, wiseml");
 		options.addOption("o", "outfile", true, "Optional: redirect output to file");
 		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
