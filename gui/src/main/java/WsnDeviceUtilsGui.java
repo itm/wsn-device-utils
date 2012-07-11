@@ -193,9 +193,22 @@ public class WsnDeviceUtilsGui {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
 				try {
-					byte[] message = StringUtils.fromStringToByteArray(devicePane.sendTextField.getText());
-					device.getOutputStream().write(message);
+
+					byte[] messageBytes;
+
+					final String inputMode = (String) devicePane.inputMode.getSelectedItem();
+
+					if ("ASCII".equals(inputMode)) {
+						messageBytes = devicePane.sendTextField.getText().getBytes();
+					} else if ("Hex-String".equals(inputMode)) {
+						messageBytes = StringUtils.fromStringToByteArray(devicePane.sendTextField.getText());
+					} else {
+						throw new RuntimeException("Unknown input mode \"" + inputMode + "\"");
+					}
+
+					device.getOutputStream().write(messageBytes);
 					device.getOutputStream().flush();
+
 				} catch (Exception e1) {
 					log.warn("Error while parsing message: {}", e1.getMessage(), e1);
 					JOptionPane.showMessageDialog(frame, "Error while parsing message: " + e1.getMessage());

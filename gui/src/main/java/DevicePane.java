@@ -39,6 +39,8 @@ public class DevicePane {
 
 	public JComboBox outputMode;
 
+	public JComboBox inputMode;
+
 	public void setDeviceControlsEnabled(boolean enabled) {
 		programButton.setEnabled(enabled);
 		resetButton.setEnabled(enabled);
@@ -125,7 +127,7 @@ public class DevicePane {
 		outputTextArea.setLineWrap(true);
 		outputScrollPane.setViewportView(outputTextArea);
 		final JPanel panel2 = new JPanel();
-		panel2.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+		panel2.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
 		contentPane.add(panel2,
 				new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
@@ -143,9 +145,20 @@ public class DevicePane {
 		sendButton = new JButton();
 		sendButton.setText("send");
 		panel2.add(sendButton,
-				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
 						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+				)
+		);
+		inputMode = new JComboBox();
+		final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
+		defaultComboBoxModel1.addElement("ASCII");
+		defaultComboBoxModel1.addElement("Hex-String");
+		inputMode.setModel(defaultComboBoxModel1);
+		panel2.add(inputMode,
+				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
+						false
 				)
 		);
 		selectionComboBox = new JComboBox();
@@ -227,11 +240,11 @@ public class DevicePane {
 				)
 		);
 		outputMode = new JComboBox();
-		final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
-		defaultComboBoxModel1.addElement("ASCII");
-		defaultComboBoxModel1.addElement("Hex-String");
-		defaultComboBoxModel1.addElement("Replace non-printable ASCII characters");
-		outputMode.setModel(defaultComboBoxModel1);
+		final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
+		defaultComboBoxModel2.addElement("ASCII");
+		defaultComboBoxModel2.addElement("Hex-String");
+		defaultComboBoxModel2.addElement("Replace non-printable ASCII characters");
+		outputMode.setModel(defaultComboBoxModel2);
 		panel4.add(outputMode,
 				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
