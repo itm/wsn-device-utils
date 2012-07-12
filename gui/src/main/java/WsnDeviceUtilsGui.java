@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -59,6 +60,10 @@ public class WsnDeviceUtilsGui {
 
 	private final ExecutorService executorService;
 
+	private final DeviceConfigurationDialog deviceConfigurationDialog = new DeviceConfigurationDialog();
+
+	private Map<String, String> deviceConfiguration = null;
+
 	public WsnDeviceUtilsGui(final ExecutorService executorService) {
 
 		this.executorService = executorService;
@@ -78,29 +83,45 @@ public class WsnDeviceUtilsGui {
 		deviceObserver.updateState();
 		ImmutableMap<String, DeviceInfo> currentState = deviceObserver.getCurrentState();
 		Object[] devicePorts = currentState.keySet().toArray();
-		Object[] items = new String[devicePorts.length + 2];
-		items[0] = "";
-		items[1] = "Mock Device";
-		System.arraycopy(devicePorts, 0, items, 2, devicePorts.length);
+		Object[] items = new String[devicePorts.length + 1];
+		items[0] = "Mock Device";
+		System.arraycopy(devicePorts, 0, items, 1, devicePorts.length);
 		devicePane.selectionComboBox.setModel(new DefaultComboBoxModel(items));
 
 		if (items.length > 0) {
 			devicePane.selectionComboBox.setSelectedIndex(0);
 		}
 
-		devicePane.selectionComboBox.addActionListener(new ActionListener() {
+		devicePane.editConfigurationButton.addActionListener(new ActionListener() {
+
 			@Override
 			public void actionPerformed(final ActionEvent e) {
+				deviceConfigurationDialog.pack();
+				deviceConfigurationDialog.setVisible(true);
+				deviceConfiguration = deviceConfigurationDialog.getConfiguration();
+			}
+		}
+		);
+
+		devicePane.connectButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(final ActionEvent e) {
+
 				String devicePort = (String) devicePane.selectionComboBox.getSelectedItem();
-				if (devicePort != null && !"".equals(devicePort)) {
-					if ("Mock Device".equals(devicePort)) {
-						connect(DeviceType.MOCK.toString(), devicePort);
-					} else {
-						connect(getDeviceType(devicePort), devicePort);
-					}
+
+				if ("Mock Device".equals(devicePort)) {
+					connect(DeviceType.MOCK.toString(), devicePort, deviceConfiguration);
 				} else {
-					disconnect();
+					connect(getDeviceType(devicePort), devicePort, deviceConfiguration);
 				}
+			}
+		}
+		);
+
+		devicePane.disconnectButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(final ActionEvent e) {
+				disconnect();
 			}
 		}
 		);
@@ -206,8 +227,10 @@ public class WsnDeviceUtilsGui {
 						throw new RuntimeException("Unknown input mode \"" + inputMode + "\"");
 					}
 
-					device.getOutputStream().write(messageBytes);
-					device.getOutputStream().flush();
+					synchronized (device.getOutputStream()) {
+						device.getOutputStream().write(messageBytes);
+						device.getOutputStream().flush();
+					}
 
 				} catch (Exception e1) {
 					log.warn("Error while parsing message: {}", e1.getMessage(), e1);
@@ -236,7 +259,6 @@ public class WsnDeviceUtilsGui {
 			devicePane.progressBar.setEnabled(true);
 
 			devicePane.setDeviceControlsEnabled(false);
-			devicePane.selectionComboBox.setEnabled(false);
 		}
 
 		@Override
@@ -246,7 +268,6 @@ public class WsnDeviceUtilsGui {
 			devicePane.progressBar.setEnabled(false);
 
 			devicePane.setDeviceControlsEnabled(true);
-			devicePane.selectionComboBox.setEnabled(true);
 		}
 
 		@Override
@@ -256,7 +277,6 @@ public class WsnDeviceUtilsGui {
 			devicePane.progressBar.setEnabled(false);
 
 			devicePane.setDeviceControlsEnabled(true);
-			devicePane.selectionComboBox.setEnabled(true);
 		}
 
 		@Override
@@ -266,7 +286,6 @@ public class WsnDeviceUtilsGui {
 			devicePane.progressBar.setEnabled(false);
 
 			devicePane.setDeviceControlsEnabled(true);
-			devicePane.selectionComboBox.setEnabled(true);
 
 			JOptionPane.showMessageDialog(frame, "Failed executing operation. Reason: " + throwable);
 		}
@@ -277,11 +296,11 @@ public class WsnDeviceUtilsGui {
 		}
 	}
 
-	private void connect(final String deviceType, final String devicePort) {
+	private void connect(final String deviceType, final String devicePort, final Map<String, String> configuration) {
 
 		disconnect();
 
-		device = deviceFactory.create(executorService, deviceType);
+		device = deviceFactory.create(executorService, deviceType, configuration);
 
 		try {
 			device.connect(devicePort);
@@ -344,10 +363,15 @@ public class WsnDeviceUtilsGui {
 		// Wait until the connection is made successfully.
 		connectFuture.awaitUninterruptibly().getChannel();
 
-		log.debug("########### Connected to device at {}", devicePort);
+		log.debug("Connected to {} device at port {}", deviceType, devicePort);
+
+		devicePane.selectionComboBox.setEnabled(false);
+		devicePane.connectButton.setEnabled(false);
+		devicePane.disconnectButton.setEnabled(true);
+		devicePane.editConfigurationButton.setEnabled(false);
 
 		devicePane.setDeviceControlsEnabled(true);
-		devicePane.setStatusText("Connected to " + deviceType + " device at " + devicePort);
+		devicePane.setStatusText("Connected to " + deviceType + " device at port " + devicePort);
 	}
 
 	private String getDeviceType(final String devicePort) {
@@ -361,6 +385,11 @@ public class WsnDeviceUtilsGui {
 		devicePane.setDeviceControlsEnabled(false);
 		devicePane.outputTextArea.setText(null);
 		devicePane.setStatusText("Not connected");
+
+		devicePane.selectionComboBox.setEnabled(true);
+		devicePane.connectButton.setEnabled(true);
+		devicePane.disconnectButton.setEnabled(false);
+		devicePane.editConfigurationButton.setEnabled(true);
 	}
 
 	public static void main(String[] args) {

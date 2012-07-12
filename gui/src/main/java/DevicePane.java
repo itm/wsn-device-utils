@@ -41,6 +41,12 @@ public class DevicePane {
 
 	public JComboBox inputMode;
 
+	public JButton connectButton;
+
+	public JButton editConfigurationButton;
+
+	public JButton disconnectButton;
+
 	public void setDeviceControlsEnabled(boolean enabled) {
 		programButton.setEnabled(enabled);
 		resetButton.setEnabled(enabled);
@@ -71,54 +77,15 @@ public class DevicePane {
 	 */
 	private void $$$setupUI$$$() {
 		contentPane = new JPanel();
-		contentPane.setLayout(new GridLayoutManager(6, 3, new Insets(5, 5, 5, 5), -1, -1));
-		final JPanel panel1 = new JPanel();
-		panel1.setLayout(new GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, -1));
-		contentPane.add(panel1,
-				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE,
-						GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
-				)
-		);
-		programButton = new JButton();
-		programButton.setText("program");
-		panel1.add(programButton,
-				new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
-						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
-				)
-		);
-		readMACButton = new JButton();
-		readMACButton.setText("read MAC");
-		panel1.add(readMACButton,
-				new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
-						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
-				)
-		);
-		resetButton = new JButton();
-		resetButton.setText("reset");
-		panel1.add(resetButton,
-				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
-						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
-				)
-		);
-		writeMACButton = new JButton();
-		writeMACButton.setText("write MAC");
-		panel1.add(writeMACButton,
-				new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
-						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
-				)
-		);
+		contentPane.setLayout(new GridLayoutManager(9, 5, new Insets(5, 5, 5, 5), -1, -1));
 		outputScrollPane = new JScrollPane();
 		outputScrollPane.setVerticalScrollBarPolicy(22);
 		outputScrollPane.putClientProperty("html.disable", Boolean.TRUE);
 		contentPane.add(outputScrollPane,
-				new GridConstraints(4, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+				new GridConstraints(7, 0, 1, 5, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null,
-						new Dimension(600, 200), null, 0, false
+						new Dimension(600, 211), null, 0, false
 				)
 		);
 		outputTextArea = new JTextArea();
@@ -126,26 +93,26 @@ public class DevicePane {
 		outputTextArea.setEnabled(true);
 		outputTextArea.setLineWrap(true);
 		outputScrollPane.setViewportView(outputTextArea);
-		final JPanel panel2 = new JPanel();
-		panel2.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
-		contentPane.add(panel2,
-				new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+		final JPanel panel1 = new JPanel();
+		panel1.setLayout(new GridLayoutManager(1, 4, new Insets(0, 0, 0, 0), -1, -1));
+		contentPane.add(panel1,
+				new GridConstraints(4, 0, 1, 5, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null,
 						0, false
 				)
 		);
 		sendTextField = new JTextField();
-		panel2.add(sendTextField,
-				new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+		panel1.add(sendTextField,
+				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null,
 						new Dimension(150, -1), null, 0, false
 				)
 		);
 		sendButton = new JButton();
 		sendButton.setText("send");
-		panel2.add(sendButton,
-				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+		panel1.add(sendButton,
+				new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
 						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
 				)
@@ -155,23 +122,22 @@ public class DevicePane {
 		defaultComboBoxModel1.addElement("ASCII");
 		defaultComboBoxModel1.addElement("Hex-String");
 		inputMode.setModel(defaultComboBoxModel1);
-		panel2.add(inputMode,
-				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
+		panel1.add(inputMode,
+				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
 						false
 				)
 		);
-		selectionComboBox = new JComboBox();
-		contentPane.add(selectionComboBox,
-				new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
-						GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
-						false
-				)
+		final JLabel label1 = new JLabel();
+		label1.setText("Input");
+		panel1.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+				GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+		)
 		);
-		final JPanel panel3 = new JPanel();
-		panel3.setLayout(new GridLayoutManager(2, 2, new Insets(5, 5, 5, 5), -1, -1));
-		contentPane.add(panel3,
-				new GridConstraints(5, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+		final JPanel panel2 = new JPanel();
+		panel2.setLayout(new GridLayoutManager(2, 2, new Insets(5, 5, 5, 5), -1, -1));
+		contentPane.add(panel2,
+				new GridConstraints(8, 0, 1, 5, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null,
 						0, false
@@ -181,7 +147,7 @@ public class DevicePane {
 		progressBar.setBorderPainted(true);
 		progressBar.setEnabled(true);
 		progressBar.setStringPainted(true);
-		panel3.add(progressBar,
+		panel2.add(progressBar,
 				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
 						false
@@ -189,36 +155,36 @@ public class DevicePane {
 		);
 		statusLabel = new JLabel();
 		statusLabel.setText("");
-		panel3.add(statusLabel, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+		panel2.add(statusLabel, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
 				GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW,
 				GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
 		)
 		);
-		final JLabel label1 = new JLabel();
-		label1.setText("Operation progress:");
-		panel3.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+		final JLabel label2 = new JLabel();
+		label2.setText("Operation progress:");
+		panel2.add(label2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
 				GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
 		)
 		);
-		final JPanel panel4 = new JPanel();
-		panel4.setLayout(new GridLayoutManager(1, 5, new Insets(0, 0, 0, 0), -1, -1));
-		contentPane.add(panel4,
-				new GridConstraints(3, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+		final JPanel panel3 = new JPanel();
+		panel3.setLayout(new GridLayoutManager(1, 5, new Insets(0, 0, 0, 0), -1, -1));
+		contentPane.add(panel3,
+				new GridConstraints(6, 0, 1, 5, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null,
 						0, false
 				)
 		);
 		deviceOutputLabel = new JLabel();
-		deviceOutputLabel.setText("Device Output");
-		panel4.add(deviceOutputLabel,
+		deviceOutputLabel.setText("Output");
+		panel3.add(deviceOutputLabel,
 				new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
 						GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
 				)
 		);
 		clearOutputButton = new JButton();
 		clearOutputButton.setText("Clear");
-		panel4.add(clearOutputButton,
+		panel3.add(clearOutputButton,
 				new GridConstraints(0, 4, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
 						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
@@ -227,14 +193,14 @@ public class DevicePane {
 		wrapLinesCheckBox = new JCheckBox();
 		wrapLinesCheckBox.setSelected(true);
 		wrapLinesCheckBox.setText("Wrap Lines");
-		panel4.add(wrapLinesCheckBox,
+		panel3.add(wrapLinesCheckBox,
 				new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
 						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
 						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
 				)
 		);
 		final Spacer spacer1 = new Spacer();
-		panel4.add(spacer1,
+		panel3.add(spacer1,
 				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false
 				)
@@ -245,7 +211,7 @@ public class DevicePane {
 		defaultComboBoxModel2.addElement("Hex-String");
 		defaultComboBoxModel2.addElement("Replace non-printable ASCII characters");
 		outputMode.setModel(defaultComboBoxModel2);
-		panel4.add(outputMode,
+		panel3.add(outputMode,
 				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL,
 						GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
 						false
@@ -253,7 +219,96 @@ public class DevicePane {
 		);
 		final JSeparator separator1 = new JSeparator();
 		contentPane.add(separator1,
-				new GridConstraints(2, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+				new GridConstraints(5, 0, 1, 5, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+						GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
+						false
+				)
+		);
+		final JSeparator separator2 = new JSeparator();
+		contentPane.add(separator2,
+				new GridConstraints(3, 0, 1, 5, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+						GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
+						false
+				)
+		);
+		final JLabel label3 = new JLabel();
+		label3.setText("Controls");
+		contentPane.add(label3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+				GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+		)
+		);
+		final JLabel label4 = new JLabel();
+		label4.setText("Connection");
+		contentPane.add(label4, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+				GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+		)
+		);
+		programButton = new JButton();
+		programButton.setText("program");
+		contentPane.add(programButton,
+				new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+				)
+		);
+		selectionComboBox = new JComboBox();
+		contentPane.add(selectionComboBox,
+				new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE,
+						GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
+						false
+				)
+		);
+		resetButton = new JButton();
+		resetButton.setText("reset");
+		contentPane.add(resetButton,
+				new GridConstraints(2, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+				)
+		);
+		editConfigurationButton = new JButton();
+		editConfigurationButton.setText("edit configuration");
+		contentPane.add(editConfigurationButton,
+				new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+				)
+		);
+		readMACButton = new JButton();
+		readMACButton.setText("read MAC");
+		contentPane.add(readMACButton,
+				new GridConstraints(2, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+				)
+		);
+		connectButton = new JButton();
+		connectButton.setText("connect");
+		contentPane.add(connectButton,
+				new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+						GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false
+				)
+		);
+		writeMACButton = new JButton();
+		writeMACButton.setText("write MAC");
+		contentPane.add(writeMACButton,
+				new GridConstraints(2, 4, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+						GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 29), null, 0, false
+				)
+		);
+		disconnectButton = new JButton();
+		disconnectButton.setText("disconnect");
+		contentPane.add(disconnectButton,
+				new GridConstraints(0, 4, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+						GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+						GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(139, 29), null, 0, false
+				)
+		);
+		final JSeparator separator3 = new JSeparator();
+		contentPane.add(separator3,
+				new GridConstraints(1, 0, 1, 5, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
 						GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0,
 						false
 				)
