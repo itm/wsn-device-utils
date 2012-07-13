@@ -177,7 +177,7 @@ public class DeviceFlasherCLI {
 
 	private static void closeConnection(final ExecutorService executorService, final Closeable connection) {
 		Closeables.closeQuietly(connection);
-		ExecutorUtils.shutdown(executorService, 10, TimeUnit.SECONDS);
+		ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
 	}
 
 	private static Options createCommandLineOptions() {
