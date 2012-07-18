@@ -37,6 +37,7 @@ import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import de.uniluebeck.itm.wsn.drivers.core.operation.OperationListener;
 import de.uniluebeck.itm.wsn.drivers.core.operation.StateChangedEvent;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
@@ -130,7 +131,10 @@ public class DeviceMacWriterCLI {
 				new ThreadFactoryBuilder().setNameFormat("DeviceMacWriter %d").build()
 		);
 
-		final Injector injector = Guice.createInjector(new DeviceUtilsModule(executorService, null, use16BitMode));
+		final Injector injector = Guice.createInjector(
+				new DeviceFactoryModule(),
+				new DeviceUtilsModule(executorService, null, use16BitMode)
+		);
 		final Device device = injector.getInstance(DeviceFactory.class).create(executorService, deviceType, configuration);
 		
 		device.connect(port);

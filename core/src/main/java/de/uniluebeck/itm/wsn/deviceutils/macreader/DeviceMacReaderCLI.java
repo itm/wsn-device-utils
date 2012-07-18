@@ -32,6 +32,7 @@ import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
+import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryModule;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
@@ -127,6 +128,7 @@ public class DeviceMacReaderCLI {
 		);
 
 		final Injector injector = Guice.createInjector(
+				new DeviceFactoryModule(),
 				new DeviceMacReaderModule(executorService, deviceMacReferenceMap, use16BitMode)
 		);
 
