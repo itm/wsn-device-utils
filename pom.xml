@@ -95,7 +95,7 @@
 			<dependency>
 				<groupId>de.uniluebeck.itm.netty.handlerstack</groupId>
 				<artifactId>protocol-collection</artifactId>
-				<version>1.5-SNAPSHOT</version>
+				<version>1.5</version>
 			</dependency>
 
 			<dependency>
