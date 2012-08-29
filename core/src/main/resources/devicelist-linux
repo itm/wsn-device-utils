@@ -240,7 +240,7 @@ EOF
       $dev->{InfoManufacturer} = "";
     }
 
-    if ($dev->{InfoProduct} eq "USB <-> Serial"){
+    if ($dev->{InfoProduct} eq "USB <-> Serial" || $dev->{InfoProduct} eq "isense-gateway-module-2"){
       $dev->{InfoProduct} = "isense";
       $dev->{InfoManufacturer} = "";
     }
