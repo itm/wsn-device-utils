@@ -240,6 +240,11 @@ EOF
       $dev->{InfoManufacturer} = "";
     }
 
+    if ($dev->{InfoProduct} eq "MTM-CM5000MSP") {
+      $dev->{InfoProduct} = "telosb";
+      $dev->{InfoManufacturer} = "";
+    }
+
     if ($dev->{InfoProduct} eq "USB <-> Serial"){
       $dev->{InfoProduct} = "isense";
       $dev->{InfoManufacturer} = "";
