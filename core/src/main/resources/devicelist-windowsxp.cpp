@@ -382,7 +382,8 @@ ListDevice getDevices()
         d.info = usb6001[d.id]("LocationInformation").data; 
         
 	is_isense = strcmp(d.info.c_str(), "USB <-> Serial") == 0;
-        is_telosb = strcmp(d.info.c_str(), "Crossbow Telos Rev.B") == 0;
+        is_telosb = (strcmp(d.info.c_str(), "Crossbow Telos Rev.B") == 0) ||
+		(strcmp(d.info.c_str(), "MTM-CM5000MSP") == 0);
         is_xbee = strcmp(d.info.c_str(), "FT232R USB UART") == 0;
 
         if (is_isense)
