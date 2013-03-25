@@ -79,6 +79,8 @@ EOF
       $desc = "pacemate";
     } elsif ($firstLetterSerial eq "A") {
       $desc = "xbee";
+    } elsif (substr($dev->{"InfoSerial"}, 0, 4) eq "MFUD") {
+      $desc = "telosb";
     } elsif ($firstLetterSerial eq "X") {
       $desc = "telosb";
     } else {
