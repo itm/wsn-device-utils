@@ -45,7 +45,6 @@ public class StringWriter extends WriterHandler {
 		super.messageReceived(ctx, e);
 
 		output.write(((ChannelBuffer) e.getMessage()).toString(charset));
-		output.newLine();
 		output.flush();
 	}
 }
