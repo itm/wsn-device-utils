@@ -40,6 +40,8 @@ import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import static com.google.common.base.Throwables.propagate;
+
 public class DeviceMacReaderImpl implements DeviceMacReader {
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceMacReaderImpl.class);
@@ -64,32 +66,36 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 	public MacAddress readMac(final String port,
 							  final String deviceTypeString,
 							  @Nullable Map<String, String> configuration,
-							  @Nullable final String reference) throws Exception {
+							  @Nullable final String reference) {
 
-		final DeviceType deviceType = DeviceType.fromString(deviceTypeString);
+		try {
 
-		switch (deviceType) {
-			case ISENSE:
-				return readMacFromDevice(port, deviceType, configuration);
-			case MOCK:
-				return readMacFromDevice(port, deviceType, configuration);
-			case PACEMATE:
-				return readMacFromDevice(port, deviceType, configuration);
-			case TELOSB:
-				return readMacFromMap(reference);
-			default:
-				return readMacFromMap(reference);
+			final DeviceType deviceType = DeviceType.fromString(deviceTypeString);
+
+			switch (deviceType) {
+				case ISENSE:
+					return readMacFromDevice(port, deviceType, configuration);
+				case MOCK:
+					return readMacFromDevice(port, deviceType, configuration);
+				case PACEMATE:
+					return readMacFromDevice(port, deviceType, configuration);
+				case TELOSB:
+					return readMacFromMap(reference);
+				default:
+					return readMacFromMap(reference);
+			}
+
+		} catch (Exception e) {
+			throw propagate(e);
 		}
-
 	}
 
 	private MacAddress readMacFromMap(final String reference) throws Exception {
 
 		if (referenceToMacMap == null || !referenceToMacMap.containsKey(reference)) {
-			throw new Exception("No MAC address for reference \"" + reference + "\" found in map!");
+			return null;
 		}
 
-		assert referenceToMacMap != null;
 		return referenceToMacMap.get(reference);
 	}
 

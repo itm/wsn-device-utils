@@ -30,9 +30,27 @@ import java.util.Map;
 
 public interface DeviceMacReader {
 
+	/**
+	 * Reads the MAC address of the device at port {@code}.
+	 * <p/>
+	 * If the device does not support reading MAC addresses using hardware functionality this method will try to
+	 * use the given {@code reference} as the USB-to-serial converters ID. This ID will then be looked up in the
+	 * {@link DeviceMacReferenceMap} instance. If present the MAC address found in this map will be returned.
+	 *
+	 * @param port
+	 * 		the device port
+	 * @param deviceType
+	 * 		the type of the device (e.g., "isense", "telosb")
+	 * @param configuration
+	 * 		arbitrary configuration parameters to be passed {@link de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory}
+	 * @param reference
+	 * 		the USB-to-serial converter ID of this device
+	 *
+	 * @return the MAC address of the attached or {@code null} if it could not be determined
+	 */
 	MacAddress readMac(final String port,
 					   final String deviceType,
 					   @Nullable Map<String, String> configuration,
-					   @Nullable final String reference) throws Exception;
+					   @Nullable final String reference);
 
 }

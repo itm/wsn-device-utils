@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReader;
+import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,12 +158,9 @@ class DeviceObserverImpl implements DeviceObserver {
 	}
 
 	private void tryToEnrichWithMacAddress(final DeviceInfo deviceInfo) {
-		try {
-			deviceInfo.macAddress = macReader.readMac(deviceInfo.port, deviceInfo.type, null, deviceInfo.reference);
-		} catch (Exception e) {
-			log.trace("Could not read MAC address of {} node on port {}. Reason: {}",
-					new Object[]{deviceInfo.type, deviceInfo.port, e}
-			);
+		final MacAddress macAddress = macReader.readMac(deviceInfo.port, deviceInfo.type, null, deviceInfo.reference);
+		if (macAddress != null) {
+			deviceInfo.macAddress = macAddress;
 		}
 	}
 

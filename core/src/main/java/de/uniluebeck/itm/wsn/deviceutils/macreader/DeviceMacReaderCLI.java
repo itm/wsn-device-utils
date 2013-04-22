@@ -151,9 +151,18 @@ public class DeviceMacReaderCLI {
 		try {
 
 			final MacAddress macAddress = deviceMacReader.readMac(port, deviceType, configuration, reference);
-			log.info("Read MAC address of {} device at port {}: {}", new Object[]{deviceType, port, macAddress});
-			System.out.println(macAddress.toHexString());
-			System.exit(0);
+
+			if (macAddress == null) {
+
+				log.info("MAC address of {} device at port {} could not be read!", deviceType, port);
+				System.exit(1);
+
+			} else {
+
+				log.info("Read MAC address of {} device at port {}: {}", new Object[]{deviceType, port, macAddress});
+				System.out.println(macAddress.toHexString());
+				System.exit(0);
+			}
 
 		} catch (Exception e) {
 			log.error("Reading MAC address failed with Exception: " + e, e);
