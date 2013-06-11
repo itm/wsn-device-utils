@@ -25,12 +25,9 @@ package de.uniluebeck.itm.wsn.deviceutils.listener;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
-import de.uniluebeck.itm.netty.handlerstack.HandlerFactoryRegistry;
-import de.uniluebeck.itm.netty.handlerstack.protocolcollection.ProtocolCollection;
+import de.uniluebeck.itm.nettyprotocols.*;
 import de.uniluebeck.itm.tr.util.Logging;
 import de.uniluebeck.itm.tr.util.StringUtils;
 import de.uniluebeck.itm.tr.util.Tuple;
@@ -131,24 +128,30 @@ public class DeviceListenerCLI {
 
 				final String handlerNamesString = line.getOptionValue('e');
 
-				Iterable<String> handlerNames = Splitter.on(",")
+				final Iterable<String> handlerNames = Splitter.on(",")
 						.omitEmptyStrings()
 						.trimResults()
 						.split(handlerNamesString);
 
-				List<Tuple<String, Multimap<String, String>>> config = newArrayList();
+				final HandlerFactoryMap handlerFactories = Guice
+						.createInjector(new NettyProtocolsModule())
+						.getInstance(HandlerFactoryMap.class);
+
 				for (String handlerName : handlerNames) {
-					config.add(new Tuple<String, Multimap<String, String>>(handlerName,
-							HashMultimap.<String, String>create()
-					)
-					);
+
+					final NamedChannelHandlerList channelHandlers = handlerFactories
+							.get(handlerName)
+							.create(new ChannelHandlerConfig(handlerName));
+
+					for (NamedChannelHandler channelHandler : channelHandlers) {
+						handlers.add(
+								new Tuple<String, ChannelHandler>(
+										channelHandler.getInstanceName(),
+										channelHandler.getChannelHandler()
+								)
+						);
+					}
 				}
-
-				final HandlerFactoryRegistry registry = new HandlerFactoryRegistry();
-				ProtocolCollection.registerProtocols(registry);
-
-				handlers = registry.create(config);
-
 			}
 
 			if (line.hasOption('f')) {
