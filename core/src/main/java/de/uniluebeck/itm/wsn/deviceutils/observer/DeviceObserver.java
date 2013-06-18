@@ -25,10 +25,9 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.uniluebeck.itm.tr.util.Listenable;
+import de.uniluebeck.itm.util.Listenable;
 
 import javax.annotation.Nullable;
-import java.util.Map;
 
 public interface DeviceObserver extends Runnable, Listenable<DeviceObserverListener> {
 

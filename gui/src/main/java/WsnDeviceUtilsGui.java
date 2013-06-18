@@ -4,9 +4,9 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import de.uniluebeck.itm.tr.util.ExecutorUtils;
-import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.tr.util.StringUtils;
+import de.uniluebeck.itm.util.StringUtils;
+import de.uniluebeck.itm.util.concurrent.ExecutorUtils;
+import de.uniluebeck.itm.util.logging.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceInfo;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
@@ -16,7 +16,6 @@ import de.uniluebeck.itm.wsn.drivers.core.operation.OperationAdapter;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryModule;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceType;
-import org.apache.log4j.Level;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
@@ -41,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class WsnDeviceUtilsGui {
 
 	static {
-		Logging.setLoggingDefaults(Level.TRACE);
+		Logging.setLoggingDefaults();
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(WsnDeviceUtilsGui.class);

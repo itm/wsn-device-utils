@@ -2,7 +2,7 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.uniluebeck.itm.tr.util.Listenable;
+import de.uniluebeck.itm.util.Listenable;
 
 public interface DeviceObserverListenerManager extends Listenable<DeviceObserverListener> {
 

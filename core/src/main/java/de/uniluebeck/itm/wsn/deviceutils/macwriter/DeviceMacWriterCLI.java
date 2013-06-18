@@ -28,9 +28,10 @@ import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import de.uniluebeck.itm.tr.util.ExecutorUtils;
-import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.tr.util.StringUtils;
+import de.uniluebeck.itm.util.StringUtils;
+import de.uniluebeck.itm.util.concurrent.ExecutorUtils;
+import de.uniluebeck.itm.util.logging.LogLevel;
+import de.uniluebeck.itm.util.logging.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
@@ -50,7 +51,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Maps.newHashMap;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.assertParametersPresent;
@@ -64,7 +67,7 @@ public class DeviceMacWriterCLI {
 
 	public static void main(String[] args) throws Exception {
 
-		Logging.setLoggingDefaults(Level.WARN);
+		Logging.setLoggingDefaults(LogLevel.WARN);
 
 		CommandLineParser parser = new PosixParser();
 		Options options = createCommandLineOptions();

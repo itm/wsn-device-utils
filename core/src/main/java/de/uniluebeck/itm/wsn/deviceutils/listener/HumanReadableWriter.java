@@ -23,7 +23,7 @@
 
 package de.uniluebeck.itm.wsn.deviceutils.listener;
 
-import de.uniluebeck.itm.tr.util.StringUtils;
+import de.uniluebeck.itm.util.StringUtils;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.slf4j.LoggerFactory;

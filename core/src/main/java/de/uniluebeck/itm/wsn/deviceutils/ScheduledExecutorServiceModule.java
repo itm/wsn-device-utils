@@ -4,7 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import de.uniluebeck.itm.tr.util.ForwardingScheduledExecutorService;
+import de.uniluebeck.itm.util.concurrent.ForwardingScheduledExecutorService;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

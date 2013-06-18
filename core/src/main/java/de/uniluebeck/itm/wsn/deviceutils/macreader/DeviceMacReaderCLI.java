@@ -28,7 +28,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.util.logging.LogLevel;
+import de.uniluebeck.itm.util.logging.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceEvent;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceObserver;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
@@ -70,7 +71,7 @@ public class DeviceMacReaderCLI {
 
 	public static void main(String[] args) throws Exception {
 
-		Logging.setLoggingDefaults(Level.WARN);
+		Logging.setLoggingDefaults(LogLevel.WARN);
 
 		CommandLineParser parser = new PosixParser();
 		Options options = createCommandLineOptions();
@@ -159,7 +160,7 @@ public class DeviceMacReaderCLI {
 
 			} else {
 
-				log.info("Read MAC address of {} device at port {}: {}", new Object[]{deviceType, port, macAddress});
+				log.info("Read MAC address of {} device at port {}: {}", deviceType, port, macAddress);
 				System.out.println(macAddress.toHexString());
 				System.exit(0);
 			}

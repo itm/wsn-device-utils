@@ -25,11 +25,9 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import de.uniluebeck.itm.tr.util.Logging;
+import de.uniluebeck.itm.util.logging.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
-import de.uniluebeck.itm.wsn.deviceutils.ScheduledExecutorServiceModule;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
 import de.uniluebeck.itm.wsn.drivers.core.MacAddress;
 import org.apache.commons.cli.CommandLine;

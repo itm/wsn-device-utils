@@ -28,9 +28,10 @@ import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import de.uniluebeck.itm.nettyprotocols.*;
-import de.uniluebeck.itm.tr.util.Logging;
-import de.uniluebeck.itm.tr.util.StringUtils;
-import de.uniluebeck.itm.tr.util.Tuple;
+import de.uniluebeck.itm.util.StringUtils;
+import de.uniluebeck.itm.util.Tuple;
+import de.uniluebeck.itm.util.logging.LogLevel;
+import de.uniluebeck.itm.util.logging.Logging;
 import de.uniluebeck.itm.wsn.drivers.core.Device;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactory;
 import de.uniluebeck.itm.wsn.drivers.factories.DeviceFactoryModule;
@@ -63,6 +64,10 @@ import static org.jboss.netty.channel.Channels.pipeline;
 
 public class DeviceListenerCLI {
 
+	static {
+		Logging.setLoggingDefaults(LogLevel.WARN);
+	}
+
 	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
 	private final static org.slf4j.Logger log = LoggerFactory.getLogger(DeviceListenerCLI.class);
@@ -72,8 +77,6 @@ public class DeviceListenerCLI {
 			.getInstance(DeviceFactory.class);
 
 	public static void main(String[] args) throws InterruptedException, IOException {
-
-		Logging.setLoggingDefaults(Level.WARN);
 
 		CommandLineParser parser = new PosixParser();
 		Options options = createCommandLineOptions();

@@ -88,11 +88,6 @@
 				<version>0.6</version>
 			</dependency>
 			<dependency>
-				<groupId>de.uniluebeck.itm.itmutils</groupId>
-				<artifactId>itmutils</artifactId>
-				<version>0.4.1</version>
-			</dependency>
-			<dependency>
 				<groupId>de.uniluebeck.itm.netty-protocols</groupId>
 				<artifactId>netty-protocols</artifactId>
 				<version>1.7-SNAPSHOT</version>
@@ -121,12 +116,12 @@
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
-				<version>1.7.2</version>
+				<version>1.7.5</version>
 			</dependency>
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-log4j12</artifactId>
-				<version>1.7.2</version>
+				<version>1.7.5</version>
 			</dependency>
 			<dependency>
 				<groupId>joda-time</groupId>
@@ -136,7 +131,7 @@
 			<dependency>
 				<groupId>com.google.guava</groupId>
 				<artifactId>guava</artifactId>
-				<version>13.0</version>
+				<version>14.0.1</version>
 			</dependency>
 			<dependency>
 				<groupId>commons-codec</groupId>
