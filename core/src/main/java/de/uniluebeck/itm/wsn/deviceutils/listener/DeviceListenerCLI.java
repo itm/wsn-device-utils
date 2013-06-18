@@ -39,12 +39,11 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.iostream.IOStreamAddress;
 import org.jboss.netty.channel.iostream.IOStreamChannelFactory;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
@@ -68,9 +67,7 @@ public class DeviceListenerCLI {
 		Logging.setLoggingDefaults(LogLevel.WARN);
 	}
 
-	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
-
-	private final static org.slf4j.Logger log = LoggerFactory.getLogger(DeviceListenerCLI.class);
+	private final static Logger log = LoggerFactory.getLogger(DeviceListenerCLI.class);
 
 	private static final DeviceFactory deviceFactory = Guice
 			.createInjector(new DeviceFactoryModule())
@@ -98,12 +95,11 @@ public class DeviceListenerCLI {
 			}
 
 			if (line.hasOption('v')) {
-				Logger.getRootLogger().setLevel(Level.DEBUG);
+				Logging.setLogLevel(LogLevel.DEBUG);
 			}
 
 			if (line.hasOption('l')) {
-				Level level = Level.toLevel(line.getOptionValue('l'));
-				Logger.getRootLogger().setLevel(level);
+				Logging.setLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 			}
 
 			if (line.hasOption('c')) {
@@ -286,7 +282,7 @@ public class DeviceListenerCLI {
 		options.addOption("o", "outfile", true, "Optional: redirect output to file");
 		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
 		options.addOption("l", "logging", true,
-				"Optional: set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+				"Optional: set logging level (one of [" + Joiner.on(", ").join(Logging.LOG_LEVELS) + "])"
 		);
 		options.addOption("h", "help", false, "Optional: print help");
 

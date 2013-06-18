@@ -41,7 +41,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +63,6 @@ public class DeviceFlasherCLI {
 		Logging.setLoggingDefaults(LogLevel.WARN);
 	}
 
-	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
-
 	private static final Logger log = LoggerFactory.getLogger(DeviceFlasherCLI.class);
 
 	public static void main(String[] args) throws Exception {
@@ -87,12 +84,11 @@ public class DeviceFlasherCLI {
 			}
 
 			if (line.hasOption('v')) {
-				org.apache.log4j.Logger.getRootLogger().setLevel(Level.DEBUG);
+				Logging.setLogLevel(LogLevel.DEBUG);
 			}
 
 			if (line.hasOption('l')) {
-				Level level = Level.toLevel(line.getOptionValue('l'));
-				org.apache.log4j.Logger.getRootLogger().setLevel(level);
+				Logging.setLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 			}
 
 			if (line.hasOption('c')) {
@@ -202,7 +198,7 @@ public class DeviceFlasherCLI {
 		);
 		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
 		options.addOption("l", "logging", true,
-				"Optional: set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+				"Optional: set logging level (one of [" + Joiner.on(", ").join(Logging.LOG_LEVELS) + "])"
 		);
 		options.addOption("h", "help", false, "Optional: print help");
 

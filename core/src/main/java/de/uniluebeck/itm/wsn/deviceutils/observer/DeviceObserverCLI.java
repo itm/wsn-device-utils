@@ -26,6 +26,7 @@ package de.uniluebeck.itm.wsn.deviceutils.observer;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
+import de.uniluebeck.itm.util.logging.LogLevel;
 import de.uniluebeck.itm.util.logging.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
 import de.uniluebeck.itm.wsn.deviceutils.macreader.DeviceMacReferenceMap;
@@ -34,7 +35,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
-import org.apache.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +47,6 @@ import java.util.concurrent.*;
 import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 
 public class DeviceObserverCLI {
-
-	private final static Level[] LOG_LEVELS = {Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR};
 
 	private static final Logger log = LoggerFactory.getLogger(DeviceObserverCLI.class);
 
@@ -76,12 +74,11 @@ public class DeviceObserverCLI {
 			}
 
 			if (line.hasOption('v')) {
-				org.apache.log4j.Logger.getRootLogger().setLevel(Level.DEBUG);
+				Logging.setLogLevel(LogLevel.DEBUG);
 			}
 
 			if (line.hasOption('l')) {
-				Level level = Level.toLevel(line.getOptionValue('l'));
-				org.apache.log4j.Logger.getRootLogger().setLevel(level);
+				Logging.setLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 			}
 
 			if (line.hasOption('r')) {
@@ -152,7 +149,7 @@ public class DeviceObserverCLI {
 		);
 		options.addOption("v", "verbose", false, "Optional: verbose logging output (equal to -l DEBUG)");
 		options.addOption("l", "logging", true,
-				"Optional: set logging level (one of [" + Joiner.on(", ").join(LOG_LEVELS) + "])"
+				"Optional: set logging level (one of [" + Joiner.on(", ").join(Logging.LOG_LEVELS) + "])"
 		);
 		options.addOption("h", "help", false, "Optional: print help");
 

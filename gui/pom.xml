@@ -22,7 +22,8 @@
   ~ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                               ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
 
@@ -36,9 +37,9 @@
 	<artifactId>gui</artifactId>
 	<packaging>jar</packaging>
 	<name>WSN Device Utils :: GUI</name>
-	
+
 	<dependencies>
-		
+
 		<dependency>
 			<groupId>de.uniluebeck.itm</groupId>
 			<artifactId>wsn-device-drivers-factories</artifactId>
@@ -46,6 +47,14 @@
 		<dependency>
 			<groupId>de.uniluebeck.itm.wsn-device-utils</groupId>
 			<artifactId>wsn-device-utils</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>de.uniluebeck.itm</groupId>
+			<artifactId>wsn-device-drivers-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>de.uniluebeck.itm.util</groupId>
+			<artifactId>logging</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.intellij</groupId>
