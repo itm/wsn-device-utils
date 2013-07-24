@@ -102,34 +102,42 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 	private MacAddress readMacFromDevice(final String port, final DeviceType deviceType,
 										 @Nullable Map<String, String> configuration) throws Exception {
 
-		final Device device = deviceFactory.create(executorService, deviceType, configuration);
-
 		try {
 
-			tryToConnect(device, port);
+			final Device device = deviceFactory.create(executorService, deviceType, configuration);
 
-			final OperationListener<MacAddress> callback = new OperationAdapter<MacAddress>() {
-				private int lastProgress = -1;
+			try {
 
-				@Override
-				public void onProgressChange(float fraction) {
-					int newProgress = (int) Math.floor(fraction * 100);
-					if (lastProgress < newProgress) {
-						lastProgress = newProgress;
-						log.debug("Progress: {}%", newProgress);
+				tryToConnect(device, port);
+
+				final OperationListener<MacAddress> callback = new OperationAdapter<MacAddress>() {
+					private int lastProgress = -1;
+
+					@Override
+					public void onProgressChange(float fraction) {
+						int newProgress = (int) Math.floor(fraction * 100);
+						if (lastProgress < newProgress) {
+							lastProgress = newProgress;
+							log.debug("Progress: {}%", newProgress);
+						}
 					}
+				};
+
+				final MacAddress macAddress = device.readMac(TIMEOUT, callback).get();
+
+				if (use16BitMode) {
+					return macAddress.to16BitMacAddress();
 				}
-			};
 
-			final MacAddress macAddress = device.readMac(TIMEOUT, callback).get();
+				return macAddress;
 
-			if (use16BitMode) {
-				return macAddress.to16BitMacAddress();
+			} finally {
+				Closeables.closeQuietly(device);
 			}
-			return macAddress;
 
-		} finally {
-			Closeables.closeQuietly(device);
+		} catch (final Throwable e) {
+			log.warn("Error while reading MAC address from device: ", e);
+			throw propagate(e);
 		}
 	}
 

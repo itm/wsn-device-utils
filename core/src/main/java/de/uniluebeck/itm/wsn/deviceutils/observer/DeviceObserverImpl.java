@@ -158,9 +158,13 @@ class DeviceObserverImpl implements DeviceObserver {
 	}
 
 	private void tryToEnrichWithMacAddress(final DeviceInfo deviceInfo) {
-		final MacAddress macAddress = macReader.readMac(deviceInfo.port, deviceInfo.type, null, deviceInfo.reference);
-		if (macAddress != null) {
-			deviceInfo.macAddress = macAddress;
+		try {
+			final MacAddress macAddress = macReader.readMac(deviceInfo.port, deviceInfo.type, null, deviceInfo.reference);
+			if (macAddress != null) {
+				deviceInfo.macAddress = macAddress;
+			}
+		} catch (Exception e) {
+			log.warn("Exception while trying to read MAC address from device: ", e);
 		}
 	}
 
