@@ -107,7 +107,7 @@
 			<dependency>
 				<groupId>de.uniluebeck.itm.netty-iostream</groupId>
 				<artifactId>netty-iostream</artifactId>
-				<version>0.6</version>
+				<version>0.7</version>
 			</dependency>
 			<dependency>
 				<groupId>de.uniluebeck.itm.netty-protocols</groupId>
@@ -116,9 +116,9 @@
 			</dependency>
 
 			<dependency>
-				<groupId>org.jboss.netty</groupId>
+				<groupId>io.netty</groupId>
 				<artifactId>netty</artifactId>
-				<version>3.2.7.Final</version>
+				<version>3.5.8.Final</version>
 			</dependency>
 			<dependency>
 				<groupId>com.google.code.findbugs</groupId>
