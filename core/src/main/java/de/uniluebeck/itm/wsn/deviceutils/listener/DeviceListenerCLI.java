@@ -180,7 +180,7 @@ public class DeviceListenerCLI {
 			}
 
 		} catch (Exception e) {
-			log.error("Invalid command line: {}", e);
+			log.error("Invalid command line: {}", e.getMessage());
 			printUsageAndExit(DeviceListenerCLI.class, options, 1);
 		}
 
