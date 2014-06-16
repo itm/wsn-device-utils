@@ -31,11 +31,14 @@ import java.util.Map;
 public interface DeviceMacReader {
 
 	/**
+	 * <p>
 	 * Reads the MAC address of the device at port {@code}.
-	 * <p/>
+	 * </p>
+	 * <p>
 	 * If the device does not support reading MAC addresses using hardware functionality this method will try to
 	 * use the given {@code reference} as the USB-to-serial converters ID. This ID will then be looked up in the
 	 * {@link DeviceMacReferenceMap} instance. If present the MAC address found in this map will be returned.
+	 * </p>
 	 *
 	 * @param port
 	 * 		the device port

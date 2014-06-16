@@ -315,9 +315,6 @@ public class DevicePane {
 		);
 	}
 
-	/**
-	 * @noinspection ALL
-	 */
 	public JComponent $$$getRootComponent$$$() {
 		return contentPane;
 	}

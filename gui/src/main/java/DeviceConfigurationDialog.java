@@ -169,9 +169,6 @@ public class DeviceConfigurationDialog extends JDialog {
 		);
 	}
 
-	/**
-	 * @noinspection ALL
-	 */
 	public JComponent $$$getRootComponent$$$() {
 		return contentPane;
 	}
