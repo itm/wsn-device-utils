@@ -6,6 +6,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import de.uniluebeck.itm.util.StringUtils;
 import de.uniluebeck.itm.util.concurrent.ExecutorUtils;
+import de.uniluebeck.itm.util.logging.LogLevel;
 import de.uniluebeck.itm.util.logging.Logging;
 import de.uniluebeck.itm.wsn.deviceutils.DeviceUtilsModule;
 import de.uniluebeck.itm.wsn.deviceutils.observer.DeviceInfo;
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 public class WsnDeviceUtilsGui {
 
 	static {
-		Logging.setLoggingDefaults();
+		Logging.setLoggingDefaults(LogLevel.TRACE);
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(WsnDeviceUtilsGui.class);
@@ -164,7 +165,16 @@ public class WsnDeviceUtilsGui {
 						return;
 					}
 
-					device.program(selectedFileBytes, 120000, new DevicePaneOperationListener<Void>(devicePane));
+					device.program(selectedFileBytes, 120000, new DevicePaneOperationListener<Void>(devicePane) {
+								@Override
+								public void onSuccess(final Void result) {
+									super.onSuccess(result);
+									// simulate reconnect
+									String devicePort = (String) devicePane.selectionComboBox.getSelectedItem();
+									connect(getDeviceType(devicePort), devicePort, deviceConfiguration);
+									device.reset(1000, new DevicePaneOperationListener<Void>(devicePane));
+								}
+							});
 				}
 			}
 		}
