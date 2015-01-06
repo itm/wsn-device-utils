@@ -61,6 +61,7 @@ import static de.uniluebeck.itm.wsn.deviceutils.CliUtils.printUsageAndExit;
 public class DeviceMacWriterCLI {
 
 	static {
+		Logging.setRootLogLevel(LogLevel.WARN);
 		Logging.setLoggingDefaults(LogLevel.WARN);
 	}
 
@@ -86,10 +87,12 @@ public class DeviceMacWriterCLI {
 			}
 
 			if (line.hasOption('v')) {
+				Logging.setRootLogLevel(LogLevel.DEBUG);
 				Logging.setLogLevel(LogLevel.DEBUG);
 			}
 
 			if (line.hasOption('l')) {
+				Logging.setRootLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 				Logging.setLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 			}
 

@@ -58,7 +58,8 @@ public class DeviceObserverCLI {
 
 	public static void main(String[] args) throws IOException {
 
-		Logging.setLoggingDefaults();
+		Logging.setRootLogLevel(LogLevel.WARN);
+		Logging.setLogLevel(LogLevel.WARN);
 
 		CommandLineParser parser = new PosixParser();
 		Options options = createCommandLineOptions();
@@ -74,10 +75,12 @@ public class DeviceObserverCLI {
 			}
 
 			if (line.hasOption('v')) {
+				Logging.setRootLogLevel(LogLevel.DEBUG);
 				Logging.setLogLevel(LogLevel.DEBUG);
 			}
 
 			if (line.hasOption('l')) {
+				Logging.setRootLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 				Logging.setLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 			}
 

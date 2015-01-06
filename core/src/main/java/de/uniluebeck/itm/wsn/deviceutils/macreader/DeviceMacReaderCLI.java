@@ -68,6 +68,7 @@ public class DeviceMacReaderCLI {
 
 	public static void main(String[] args) throws Exception {
 
+		Logging.setRootLogLevel(LogLevel.WARN);
 		Logging.setLoggingDefaults(LogLevel.WARN);
 
 		CommandLineParser parser = new PosixParser();
@@ -88,10 +89,12 @@ public class DeviceMacReaderCLI {
 			}
 
 			if (line.hasOption('v')) {
+				Logging.setRootLogLevel(LogLevel.DEBUG);
 				Logging.setLogLevel(LogLevel.DEBUG);
 			}
 
 			if (line.hasOption('l')) {
+				Logging.setRootLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 				Logging.setLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 			}
 

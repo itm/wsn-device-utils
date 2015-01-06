@@ -64,6 +64,7 @@ import static org.jboss.netty.channel.Channels.pipeline;
 public class DeviceListenerCLI {
 
 	static {
+		Logging.setRootLogLevel(LogLevel.WARN);
 		Logging.setLoggingDefaults(LogLevel.WARN);
 	}
 
@@ -95,10 +96,12 @@ public class DeviceListenerCLI {
 			}
 
 			if (line.hasOption('v')) {
+				Logging.setRootLogLevel(LogLevel.DEBUG);
 				Logging.setLogLevel(LogLevel.DEBUG);
 			}
 
 			if (line.hasOption('l')) {
+				Logging.setRootLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 				Logging.setLogLevel(LogLevel.toLevel(line.getOptionValue('l')));
 			}
 
