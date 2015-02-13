@@ -389,8 +389,12 @@ public class WsnDeviceUtilsGui {
 
 	private void disconnect() {
 		if (device != null && device.isConnected()) {
-			Closeables.closeQuietly(device);
-		}
+            try {
+                Closeables.close(device, true);
+            } catch (IOException e) {
+                throw new RuntimeException("This exception should have been swallowed!");
+            }
+        }
 		devicePane.setDeviceControlsEnabled(false);
 		devicePane.outputTextArea.setText(null);
 		devicePane.setStatusText("Not connected");

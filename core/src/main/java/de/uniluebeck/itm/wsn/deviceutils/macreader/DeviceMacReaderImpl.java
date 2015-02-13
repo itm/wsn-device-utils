@@ -132,7 +132,7 @@ public class DeviceMacReaderImpl implements DeviceMacReader {
 				return macAddress;
 
 			} finally {
-				Closeables.closeQuietly(device);
+				Closeables.close(device, true);
 			}
 
 		} catch (final Throwable e) {

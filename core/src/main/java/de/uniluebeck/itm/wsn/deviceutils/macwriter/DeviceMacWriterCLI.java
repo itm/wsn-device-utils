@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -203,9 +204,13 @@ public class DeviceMacWriterCLI {
 
 	private static void closeConnection(final Device device, final ExecutorService executorService) {
 		log.debug("Closing Device...");
-		Closeables.closeQuietly(device);
+        try {
+            Closeables.close(device, true);
+        } catch (IOException e) {
+            throw new RuntimeException("This exception should have been swallowed!");
+        }
 
-		log.debug("Shutting down executor...");
+        log.debug("Shutting down executor...");
 		ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
 	}
 

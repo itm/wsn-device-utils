@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -178,8 +179,12 @@ public class DeviceFlasherCLI {
 	}
 
 	private static void closeConnection(final ExecutorService executorService, final Closeable connection) {
-		Closeables.closeQuietly(connection);
-		ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
+        try {
+            Closeables.close(connection, true);
+        } catch (IOException e) {
+            throw new RuntimeException("This exception should have been swallowed!");
+        }
+        ExecutorUtils.shutdown(executorService, 1, TimeUnit.SECONDS);
 	}
 
 	private static Options createCommandLineOptions() {

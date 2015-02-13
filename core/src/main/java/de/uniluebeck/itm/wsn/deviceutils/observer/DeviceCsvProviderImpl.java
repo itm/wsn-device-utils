@@ -24,6 +24,8 @@
 package de.uniluebeck.itm.wsn.deviceutils.observer;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Closeables;
+import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
 import org.apache.commons.lang.SystemUtils;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class DeviceCsvProviderImpl implements DeviceCsvProvider {
 
@@ -72,13 +75,13 @@ public class DeviceCsvProviderImpl implements DeviceCsvProvider {
 
 	private File copyScriptToTmpFile(final String scriptName) {
 
+        InputStream source = null;
 		try {
 
-			final byte[] scriptBytes = ByteStreams.toByteArray(
-					getClass().getClassLoader().getResourceAsStream(scriptName)
-			);
-			File to = File.createTempFile("devicelist", "");
-			Files.copy(ByteStreams.newInputStreamSupplier(scriptBytes), to);
+            File to = File.createTempFile("devicelist", "");
+            source = getClass().getClassLoader().getResourceAsStream(scriptName);
+            Files.asByteSink(to, FileWriteMode.APPEND).writeFrom(source);
+
 			if (!to.setExecutable(true)) {
 				throw new RuntimeException("Could not set executable flag on devicelist script!");
 			}
@@ -86,7 +89,9 @@ public class DeviceCsvProviderImpl implements DeviceCsvProvider {
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
-		}
+		} finally {
+            Closeables.closeQuietly(source);
+        }
 
 	}
 
