@@ -27,11 +27,14 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Closeables;
 import com.google.common.io.FileWriteMode;
 import com.google.common.io.Files;
+import java.io.BufferedReader;
 import org.apache.commons.lang.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -41,13 +44,35 @@ public class DeviceCsvProviderImpl implements DeviceCsvProvider {
 
 	@Override
 	public String getDeviceCsv() {
+                File file = new File("device-observer-fake.csv");
+                log.trace("Trying to open " + file.getName() + " ... ");
+                FileReader reader = null;
+                try {
+                        reader = new FileReader(file);
+                } catch (FileNotFoundException ex) {
+                        log.error(ex.getMessage());
+                }
+                BufferedReader br = null;
+                if (null != reader) {
+                    br = new BufferedReader(reader);
+                }
+                
 		if (SystemUtils.IS_OS_LINUX) {
 			return getCsv("devicelist-linux");
 		} else if (SystemUtils.IS_OS_MAC_OSX) {
 			return getCsv("devicelist-macosx");
 		} else if (SystemUtils.IS_OS_WINDOWS_XP) {
 			return getCsv("devicelist-windowsxp.exe");
-		}
+		} else if (null != br && null != reader) {
+                    try {
+                        String ret = br.readLine();
+                        reader.close();
+                        log.trace("DeviceCsv: " + ret);
+                        return ret;
+                    } catch (IOException ex) {
+                        log.error(ex.getMessage());
+                    }
+                }
 		throw new RuntimeException(
 				"OS " + SystemUtils.OS_NAME + " " + SystemUtils.OS_VERSION +
 						"(" + SystemUtils.OS_ARCH + ") is currently not supported!"
